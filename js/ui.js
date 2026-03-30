@@ -26,10 +26,28 @@ const UI = {
         leaderboardBody: document.getElementById('leaderboard-body'),
         leaderboardSearch: document.getElementById('leaderboard-search'),
         leaderboardSort: document.getElementById('leaderboard-sort'),
+        
+        // Table filters
+        tableSearch: document.getElementById('table-search'),
+        tableFilterDate: document.getElementById('table-filter-date'),
+        tableFilterUsername: document.getElementById('table-filter-username'),
+        tableStatsCount: document.getElementById('table-stats-count'),
 
         // Modals
         modalBackdrop: document.getElementById('modal-backdrop'),
         userProfileModal: document.getElementById('user-profile-modal'),
+
+        // Post Detail Modal
+        postDetailModal: document.getElementById('post-detail-modal'),
+        postDetailImage: document.getElementById('post-detail-image'),
+        postDetailVideoIcon: document.getElementById('post-detail-video-icon'),
+        postDetailAvatar: document.getElementById('post-detail-avatar'),
+        postDetailUsername: document.getElementById('post-detail-username'),
+        postDetailDate: document.getElementById('post-detail-date'),
+        postDetailLikes: document.getElementById('post-detail-likes'),
+        postDetailComments: document.getElementById('post-detail-comments'),
+        postDetailCaption: document.getElementById('post-detail-caption'),
+        postDetailLink: document.getElementById('post-detail-link'),
 
         // Profile Modal Elements
         profileAvatar: document.getElementById('profile-avatar'),
@@ -39,6 +57,11 @@ const UI = {
         profileTotalLikes: document.getElementById('profile-total-likes'),
         profileExternalLink: document.getElementById('profile-external-link'),
         profileGallery: document.getElementById('profile-gallery'),
+        profileChartToggle: document.getElementById('profile-chart-toggle'),
+        profileChartIcon: document.getElementById('profile-chart-icon'),
+        profileChartContainer: document.getElementById('profile-chart-container'),
+        profileGalleryClearFilter: document.getElementById('profile-gallery-clear-filter'),
+        profileGalleryFilterText: document.getElementById('profile-gallery-filter-text'),
 
         // Buttons
         closeModalBtns: document.querySelectorAll('.close-modal-btn'),
@@ -65,6 +88,36 @@ const UI = {
             }
         });
 
+        // Chart Toggle
+        if (this.elements.profileChartToggle) {
+            this.elements.profileChartToggle.addEventListener('click', () => {
+                const container = this.elements.profileChartContainer;
+                const icon = this.elements.profileChartIcon;
+                if (container.classList.contains('hidden')) {
+                    container.classList.remove('hidden');
+                    icon.classList.add('rotate-180');
+                    if (this.charts.profileActivity) {
+                        this.charts.profileActivity.resize();
+                    }
+                } else {
+                    container.classList.add('hidden');
+                    icon.classList.remove('rotate-180');
+                }
+            });
+        }
+        
+        if (this.elements.profileGalleryClearFilter) {
+            this.elements.profileGalleryClearFilter.addEventListener('click', () => {
+                if (this.currentProfileDetails) {
+                    this.renderProfileGallery(this.currentProfileDetails.posts);
+                    this.elements.profileGalleryClearFilter.classList.add('hidden');
+                    if (this.elements.profileGalleryFilterText) {
+                        this.elements.profileGalleryFilterText.textContent = '';
+                    }
+                }
+            });
+        }
+
         // Leaderboard Filter Listeners
         if (this.elements.leaderboardSearch && this.elements.leaderboardSort) {
             const filterLeaderboard = () => {
@@ -79,6 +132,14 @@ const UI = {
     },
 
     openModal(modal) {
+        [this.elements.userProfileModal, this.elements.postDetailModal].forEach(m => {
+            if (m && m !== modal && !m.classList.contains('hidden')) {
+                m.classList.add('hidden');
+                m.classList.remove('scale-100');
+                m.classList.add('scale-95');
+            }
+        });
+
         this.elements.modalBackdrop.classList.remove('hidden');
         // Small delay to allow display:block to apply before transition
         setTimeout(() => {
@@ -92,7 +153,7 @@ const UI = {
     },
 
     closeAllModals() {
-        const modals = [this.elements.userProfileModal];
+        const modals = [this.elements.userProfileModal, this.elements.postDetailModal];
 
         this.elements.modalBackdrop.classList.add('opacity-0');
         modals.forEach(m => {
@@ -144,7 +205,9 @@ const UI = {
             this.allLeaderboardUsers = Analytics.getTopUsers(rawData, 0); // Store for filtering
             this.filterAndRenderLeaderboard(); // Initial render
 
-            this.renderTable(rawData);
+            // Initialize and Render Table
+            this.initTableFilters(rawData);
+            this.filterAndRenderTable();
 
         } catch (err) {
             console.error("Dashboard rendering error:", err);
@@ -366,6 +429,7 @@ const UI = {
     },
 
     renderUserProfile(details) {
+        this.currentProfileDetails = details;
         const { member, stats, posts } = details;
         const els = this.elements;
 
@@ -385,8 +449,105 @@ const UI = {
         // External Link
         els.profileExternalLink.href = `https://www.fotoyu.com/profile/${member.username}`;
 
+        if (els.profileGalleryClearFilter) {
+            els.profileGalleryClearFilter.classList.add('hidden');
+        }
+        if (els.profileGalleryFilterText) {
+            els.profileGalleryFilterText.textContent = '';
+        }
+
+        // Default: it is collapsed, but when opening a new user profile, 
+        // chart might be left open from previous user.
+        if (els.profileChartContainer && !els.profileChartContainer.classList.contains('hidden')) {
+            els.profileChartContainer.classList.add('hidden');
+            if (els.profileChartIcon) els.profileChartIcon.classList.remove('rotate-180');
+        }
+
+        // Render Profile Chart
+        const dailyActivity = Analytics.getDailyActivity(posts);
+        const ctx = document.getElementById('profile-chart-activity').getContext('2d');
+        
+        if (this.charts.profileActivity) {
+            this.charts.profileActivity.destroy();
+        }
+
+        // Ensure canvas width/height gets set correctly when eventually displayed
+        this.charts.profileActivity = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dailyActivity.map(d => d.date),
+                datasets: [{
+                    label: 'Posts',
+                    data: dailyActivity.map(d => d.count),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#10B981',
+                    pointHoverBackgroundColor: '#10B981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.raw} Posts (Click to filter)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                },
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const clickedDate = dailyActivity[index].date;
+                        this.filterProfileGalleryByDate(clickedDate);
+                    }
+                }
+            }
+        });
+
+        this.renderProfileGallery(posts);
+    },
+
+    filterProfileGalleryByDate(date) {
+        if (!this.currentProfileDetails) return;
+        const filteredPosts = this.currentProfileDetails.posts.filter(p => {
+            if (!p.created_at) return false;
+            return p.created_at.split('T')[0] === date;
+        });
+        this.renderProfileGallery(filteredPosts);
+        this.elements.profileGalleryClearFilter.classList.remove('hidden');
+        if (this.elements.profileGalleryFilterText) {
+            this.elements.profileGalleryFilterText.textContent = `(Showing posts from ${date})`;
+        }
+    },
+
+    renderProfileGallery(posts) {
+        const els = this.elements;
         // Gallery
         els.profileGallery.innerHTML = '';
+
+        if (posts.length === 0) {
+            els.profileGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-400 border border-white/5 rounded-lg border-dashed">No posts found for this date.</div>`;
+            return;
+        }
 
         // Lazy loading observer
         const observer = new IntersectionObserver((entries, obs) => {
@@ -437,19 +598,132 @@ const UI = {
         });
     },
 
+    initTableFilters(data) {
+        this.allTableData = data;
+        
+        // Extract unique dates
+        const dates = [...new Set(data.map(item => item.created_at ? item.created_at.split('T')[0] : null).filter(Boolean))];
+        dates.sort((a, b) => new Date(b) - new Date(a)); // Newest first
+
+        const dateSelect = this.elements.tableFilterDate;
+        if (dateSelect) {
+            dateSelect.innerHTML = '<option value="">All Dates</option>';
+            dates.forEach(date => {
+                dateSelect.innerHTML += `<option value="${date}">${date}</option>`;
+            });
+            dateSelect.addEventListener('change', () => this.filterAndRenderTable());
+        }
+
+        // Extract unique usernames
+        const usernames = [...new Set(data.map(item => item.member?.username).filter(Boolean))];
+        usernames.sort((a, b) => a.localeCompare(b));
+        
+        const userSelect = this.elements.tableFilterUsername;
+        if (userSelect) {
+            userSelect.innerHTML = '<option value="">All Users</option>';
+            usernames.forEach(username => {
+                userSelect.innerHTML += `<option value="${username}">${username}</option>`;
+            });
+            userSelect.addEventListener('change', () => this.filterAndRenderTable());
+        }
+
+        // Setup search listener
+        if (this.elements.tableSearch) {
+            this.elements.tableSearch.addEventListener('input', () => this.filterAndRenderTable());
+        }
+    },
+
+    filterAndRenderTable(page = 1) {
+        if (!this.allTableData) return;
+
+        let filtered = [...this.allTableData];
+        
+        const dateFilter = this.elements.tableFilterDate?.value;
+        const userFilter = this.elements.tableFilterUsername?.value;
+        const searchTerm = this.elements.tableSearch?.value.toLowerCase();
+
+        if (dateFilter) {
+            filtered = filtered.filter(item => item.created_at && item.created_at.startsWith(dateFilter));
+        }
+        
+        if (userFilter) {
+            filtered = filtered.filter(item => item.member && item.member.username === userFilter);
+        }
+
+        if (searchTerm) {
+            filtered = filtered.filter(item => {
+                const caption = (item.caption || '').toLowerCase();
+                const type = (item.content_type || '').toLowerCase();
+                return caption.includes(searchTerm) || type.includes(searchTerm);
+            });
+        }
+
+        if (this.elements.tableStatsCount) {
+            this.elements.tableStatsCount.textContent = filtered.length;
+        }
+
+        // Default sort by created_at desc
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        this.renderTable(filtered, page);
+    },
+
+    showPostDetail(post) {
+        const els = this.elements;
+        if(!els.postDetailModal) return;
+        
+        // Image / Video
+        const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
+        els.postDetailImage.src = thumbUrl || 'https://via.placeholder.com/800x600?text=No+Image';
+        
+        if (post.content_type === 'video') {
+            els.postDetailVideoIcon.classList.remove('hidden');
+        } else {
+            els.postDetailVideoIcon.classList.add('hidden');
+        }
+
+        // Details
+        els.postDetailAvatar.src = post.member?.photo || '';
+        els.postDetailUsername.textContent = post.member?.username || 'Unknown';
+        els.postDetailDate.textContent = post.created_at ? new Date(post.created_at).toLocaleString() : 'Unknown Date';
+        
+        els.postDetailLikes.textContent = post.likes_count || 0;
+        els.postDetailComments.textContent = post.comment_count || 0;
+        els.postDetailCaption.textContent = post.caption || 'No caption provided.';
+        
+        els.postDetailLink.href = post.url || '#';
+
+        this.openModal(els.postDetailModal);
+    },
+
     renderTable(data, page = 1) {
         const tbody = this.elements.tableBody;
         tbody.innerHTML = '';
 
-        // Very basic client-side pagination for now
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No entries found.</td></tr>`;
+            const controls = document.getElementById('pagination-controls');
+            if(controls) controls.innerHTML = '';
+            return;
+        }
+
         const itemsPerPage = 10;
+        const maxPage = Math.ceil(data.length / itemsPerPage);
+        
+        if (page > maxPage) page = maxPage;
+        if (page < 1) page = 1;
+
         const start = (page - 1) * itemsPerPage;
         const end = start + itemsPerPage;
         const pageData = data.slice(start, end);
 
         pageData.forEach(item => {
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-white/5 transition-colors";
+            tr.className = "hover:bg-white/5 transition-colors cursor-pointer";
+            tr.onclick = (e) => {
+                if (e.target.closest('a')) return;
+                this.showPostDetail(item);
+            };
 
             const date = new Date(item.created_at).toLocaleDateString();
             const username = item.member?.username || 'Unknown';
@@ -466,24 +740,23 @@ const UI = {
                 <td class="px-6 py-4 text-center">${likes}</td>
                 <td class="px-6 py-4 text-center">${comments}</td>
                 <td class="px-6 py-4 text-right">
-                    <a href="${item.url}" target="_blank" class="text-primary hover:text-white transition-colors"><i class="fa-solid fa-external-link-alt"></i></a>
+                    <button class="text-gray-400 hover:text-white mr-3 transition-colors" title="View Details"><i class="fa-solid fa-eye"></i></button>
+                    <a href="${item.url}" target="_blank" class="text-primary hover:text-white transition-colors" title="Open External"><i class="fa-solid fa-external-link-alt"></i></a>
                 </td>
             `;
             tbody.appendChild(tr);
         });
 
-        // Simple Pagination Controls (Prev/Next)
         const controls = document.getElementById('pagination-controls');
-        // Calculate max pages
-        const maxPage = Math.ceil(data.length / itemsPerPage);
-
-        controls.innerHTML = `
-            <span class="text-sm text-gray-500">Page ${page} of ${maxPage} (${data.length} total)</span>
-            <div class="flex gap-2">
-                <button ${page === 1 ? 'disabled' : ''} onclick="UI.renderTable(window.currentData, ${page - 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                <button ${page === maxPage ? 'disabled' : ''} onclick="UI.renderTable(window.currentData, ${page + 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
-            </div>
-        `;
+        if (controls) {
+            controls.innerHTML = `
+                <span class="text-sm text-gray-500">Page ${page} of ${maxPage} (${data.length} total)</span>
+                <div class="flex gap-2">
+                    <button ${page <= 1 ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page - 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+                    <button ${page >= maxPage ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page + 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                </div>
+            `;
+        }
     }
 };
 
