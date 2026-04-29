@@ -10,10 +10,31 @@ const UI = {
     elements: {
         uploadView: document.getElementById('upload-view'),
         dashboardView: document.getElementById('dashboard-view'),
+        syncView: document.getElementById('sync-view'),
         dropzone: document.getElementById('dropzone'),
         fileInput: document.getElementById('file-input'),
         errorMsg: document.getElementById('error-message'),
         resetBtn: document.getElementById('reset-btn'),
+        navUpload: document.getElementById('nav-upload'),
+        navSync: document.getElementById('nav-sync'),
+        showSyncBtn: document.getElementById('show-sync-btn'),
+
+        // Sync Form
+        syncName: document.getElementById('sync-name'),
+        syncTreeId: document.getElementById('sync-tree-id'),
+        syncPages: document.getElementById('sync-pages'),
+        syncPagesLabel: document.getElementById('sync-pages-label'),
+        syncModeToggle: document.getElementById('sync-mode-toggle'),
+        syncModeKnob: document.getElementById('sync-mode-knob'),
+        syncToken: document.getElementById('sync-token'),
+        syncSubmitBtn: document.getElementById('sync-submit-btn'),
+        syncProgressContainer: document.getElementById('sync-progress-container'),
+        syncProgressBar: document.getElementById('sync-progress-bar'),
+        syncStatus: document.getElementById('sync-status'),
+        syncPercentage: document.getElementById('sync-percentage'),
+        syncCount: document.getElementById('sync-count'),
+        syncHistoryList: document.getElementById('sync-history-list'),
+        syncHistoryClear: document.getElementById('sync-history-clear'),
 
         // Stats
         totalPosts: document.getElementById('stat-total-posts'),
@@ -26,7 +47,7 @@ const UI = {
         leaderboardBody: document.getElementById('leaderboard-body'),
         leaderboardSearch: document.getElementById('leaderboard-search'),
         leaderboardSort: document.getElementById('leaderboard-sort'),
-        
+
         // Table filters
         tableSearch: document.getElementById('table-search'),
         tableFilterDate: document.getElementById('table-filter-date'),
@@ -73,6 +94,286 @@ const UI = {
         Chart.defaults.font.family = 'Inter';
 
         this.initModals();
+        this.initViewSwitching();
+        this.initSyncForm();
+        this.renderSyncHistory();
+    },
+
+    initViewSwitching() {
+        const { navUpload, navSync, showSyncBtn } = this.elements;
+
+        const switchView = (target) => {
+            const views = [this.elements.uploadView, this.elements.syncView, this.elements.dashboardView];
+            views.forEach(v => {
+                if (v === target) {
+                    v.classList.remove('hidden');
+                    setTimeout(() => v.classList.remove('opacity-0', 'translate-y-4'), 10);
+                } else {
+                    v.classList.add('opacity-0', 'translate-y-4');
+                    setTimeout(() => v.classList.add('hidden'), 500);
+                }
+            });
+
+            // Update Nav
+            if (target === this.elements.uploadView) {
+                navUpload.classList.add('text-primary');
+                navUpload.classList.remove('text-gray-400');
+                navSync.classList.add('text-gray-400');
+                navSync.classList.remove('text-white');
+            } else if (target === this.elements.syncView) {
+                navSync.classList.add('text-white');
+                navSync.classList.remove('text-gray-400');
+                navUpload.classList.remove('text-primary');
+                navUpload.classList.add('text-gray-400');
+            } else {
+                navUpload.classList.remove('text-primary');
+                navUpload.classList.add('text-gray-400');
+                navSync.classList.add('text-gray-400');
+                navSync.classList.remove('text-white');
+            }
+        };
+
+        navUpload.addEventListener('click', () => switchView(this.elements.uploadView));
+        navSync.addEventListener('click', () => switchView(this.elements.syncView));
+        showSyncBtn.addEventListener('click', () => switchView(this.elements.syncView));
+    },
+
+    initSyncForm() {
+        this.elements.syncSubmitBtn.addEventListener('click', () => this.startSync());
+
+        if (this.elements.syncHistoryClear) {
+            this.elements.syncHistoryClear.addEventListener('click', () => this.clearSyncHistory());
+        }
+
+        // Mode Toggle Logic
+        this.syncIsRawMode = false;
+        if (this.elements.syncModeToggle) {
+            this.elements.syncModeToggle.addEventListener('click', () => {
+                this.syncIsRawMode = !this.syncIsRawMode;
+                this.updateSyncModeUI();
+            });
+        }
+
+        // Auto-fill from last session if available
+        const lastSync = this.getCookie('last_sync');
+        if (lastSync) {
+            try {
+                const data = JSON.parse(lastSync);
+                this.elements.syncTreeId.value = data.tree_id || '';
+                this.elements.syncName.value = data.name || '';
+                this.elements.syncToken.value = data.token || '';
+                if (data.is_raw !== undefined) {
+                    this.syncIsRawMode = data.is_raw;
+                    this.updateSyncModeUI();
+                }
+            } catch (e) { }
+        }
+    },
+
+    updateSyncModeUI() {
+        const knob = this.elements.syncModeKnob;
+        const label = this.elements.syncPagesLabel;
+        const toggle = this.elements.syncModeToggle;
+
+        if (this.syncIsRawMode) {
+            knob.style.left = 'calc(100% - 14px)';
+            knob.classList.replace('bg-gray-500', 'bg-primary');
+            toggle.classList.replace('bg-white/10', 'bg-primary/20');
+            label.textContent = 'Raw Item Count';
+        } else {
+            knob.style.left = '2px';
+            knob.classList.replace('bg-primary', 'bg-gray-500');
+            toggle.classList.replace('bg-primary/20', 'bg-white/10');
+            label.textContent = 'Page Count';
+        }
+    },
+
+    async startSync() {
+        const name = this.elements.syncName.value.trim() || 'Untitled Request';
+        const treeId = this.elements.syncTreeId.value.trim();
+        const inputVal = parseInt(this.elements.syncPages.value) || 1;
+        const token = this.elements.syncToken.value.trim();
+
+        if (!treeId) {
+            this.showError("Please enter a Tree ID.");
+            return;
+        }
+
+        // Calculate actual pages
+        const pages = this.syncIsRawMode ? Math.ceil(inputVal / 20) : inputVal;
+
+        // Save to cookies
+        this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode);
+        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, token, is_raw: this.syncIsRawMode }));
+
+        // UI Reset
+        this.elements.syncProgressContainer.classList.remove('hidden');
+        this.elements.syncSubmitBtn.disabled = true;
+        this.elements.syncSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Syncing...';
+
+        let allResults = [];
+        let stopLoop = false;
+
+        for (let i = 1; i <= pages && !stopLoop; i++) {
+            this.updateSyncProgress(i, pages, `Fetching page ${i}...`, allResults.length);
+
+            try {
+                const url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(url, { headers });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+                const results = data.result || [];
+
+                if (results.length === 0) {
+                    stopLoop = true;
+                    this.elements.syncStatus.textContent = "No more data found. Finishing...";
+                } else {
+                    allResults = [...allResults, ...results];
+                }
+
+                // Small artificial delay for UI feel
+                await new Promise(r => setTimeout(r, 300));
+
+            } catch (err) {
+                console.error(err);
+                this.showError(`Error at page ${i}: ${err.message}`);
+                stopLoop = true;
+            }
+        }
+
+        this.updateSyncProgress(pages, pages, "Complete!", allResults.length);
+
+        setTimeout(() => {
+            if (allResults.length > 0) {
+                window.currentData = allResults;
+                const stats = Analytics.process(allResults);
+                this.showDashboard(stats, allResults);
+            } else {
+                this.showError("No data was fetched.");
+            }
+
+            // Reset button
+            this.elements.syncSubmitBtn.disabled = false;
+            this.elements.syncSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2"></i> Start Synchronizing';
+        }, 800);
+    },
+
+    updateSyncProgress(current, total, status, count) {
+        const percent = Math.round((current / total) * 100);
+        this.elements.syncProgressBar.style.width = `${percent}%`;
+        this.elements.syncPercentage.textContent = `${percent}%`;
+        this.elements.syncStatus.textContent = status;
+        this.elements.syncCount.textContent = `Total items collected: ${count}`;
+    },
+
+    saveSyncHistory(name, tree_id, pages, token, is_raw = false) {
+        let history = [];
+        const existing = this.getCookie('sync_history');
+        if (existing) {
+            try { history = JSON.parse(existing); } catch (e) { }
+        }
+
+        // Remove duplicate and add to top
+        history = history.filter(h => h.tree_id !== tree_id || h.name !== name);
+        history.unshift({ name, tree_id, pages, token, is_raw, date: new Date().toISOString() });
+
+        // Limit to 20
+        if (history.length > 20) history = history.slice(0, 20);
+
+        this.setCookie('sync_history', JSON.stringify(history));
+        this.renderSyncHistory();
+    },
+
+    clearSyncHistory() {
+        if (confirm("Are you sure you want to clear all sync history?")) {
+            this.setCookie('sync_history', '[]');
+            this.renderSyncHistory();
+        }
+    },
+
+    deleteSyncHistoryItem(index) {
+        let history = [];
+        const existing = this.getCookie('sync_history');
+        if (existing) {
+            try { history = JSON.parse(existing); } catch (e) { }
+        }
+
+        history.splice(index, 1);
+        this.setCookie('sync_history', JSON.stringify(history));
+        this.renderSyncHistory();
+    },
+
+    renderSyncHistory() {
+        const list = this.elements.syncHistoryList;
+        if (!list) return;
+
+        let history = [];
+        const existing = this.getCookie('sync_history');
+        if (existing) {
+            try { history = JSON.parse(existing); } catch (e) { }
+        }
+
+        if (history.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-8 text-gray-500 border border-white/5 border-dashed rounded-xl">
+                    No history found.
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        history.forEach((h, index) => {
+            const date = new Date(h.date).toLocaleDateString();
+            const item = document.createElement('div');
+            item.className = "bg-white/5 border border-white/5 hover:border-primary/30 rounded-xl p-4 cursor-pointer transition-all group relative";
+            item.innerHTML = `
+                <div class="flex justify-between items-start mb-1 pr-6">
+                    <h4 class="font-bold text-white group-hover:text-primary transition-colors truncate">${h.name}</h4>
+                    <span class="text-[10px] text-gray-500">${date}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <span class="truncate max-w-[150px]">ID: ${h.tree_id}</span>
+                    <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px]">${h.is_raw ? 'Raw' : 'Pages'}</span>
+                </div>
+                <button class="delete-history-btn absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1" title="Delete Item">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            
+            item.onclick = (e) => {
+                if (e.target.closest('.delete-history-btn')) return; // Ignore if delete button clicked
+                this.elements.syncName.value = h.name;
+                this.elements.syncTreeId.value = h.tree_id;
+                this.elements.syncPages.value = h.pages;
+                this.elements.syncToken.value = h.token || '';
+                this.syncIsRawMode = !!h.is_raw;
+                this.updateSyncModeUI();
+            };
+
+            const delBtn = item.querySelector('.delete-history-btn');
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.deleteSyncHistoryItem(index);
+            };
+
+            list.appendChild(item);
+        });
+    },
+
+    setCookie(name, value, days = 7) {
+        const expires = new Date(Date.now() + days * 864e5).toUTCString();
+        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+    },
+
+    getCookie(name) {
+        return document.cookie.split('; ').reduce((r, v) => {
+            const parts = v.split('=');
+            return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+        }, '');
     },
 
     initModals() {
@@ -105,7 +406,7 @@ const UI = {
                 }
             });
         }
-        
+
         if (this.elements.profileGalleryClearFilter) {
             this.elements.profileGalleryClearFilter.addEventListener('click', () => {
                 if (this.currentProfileDetails) {
@@ -180,10 +481,13 @@ const UI = {
 
     showDashboard(stats, rawData) {
         try {
-            // Animation: Hide Upload, Show Dashboard
+            // Animation: Hide Upload/Sync, Show Dashboard
             this.elements.uploadView.classList.add('opacity-0', '-translate-y-4');
+            this.elements.syncView.classList.add('opacity-0', 'translate-y-4');
+
             setTimeout(() => {
                 this.elements.uploadView.classList.add('hidden');
+                this.elements.syncView.classList.add('hidden');
                 this.elements.dashboardView.classList.remove('hidden');
 
                 // Trigger reflow
@@ -191,6 +495,12 @@ const UI = {
 
                 this.elements.dashboardView.classList.remove('opacity-0', 'translate-y-4');
                 this.elements.resetBtn.classList.remove('hidden');
+
+                // Clear nav highlighting
+                this.elements.navUpload.classList.remove('text-primary');
+                this.elements.navUpload.classList.add('text-gray-400');
+                this.elements.navSync.classList.remove('text-white');
+                this.elements.navSync.classList.add('text-gray-400');
             }, 500);
 
             this.renderStats(stats.summary);
@@ -219,8 +529,15 @@ const UI = {
         this.elements.dashboardView.classList.add('opacity-0', 'translate-y-4');
         setTimeout(() => {
             this.elements.dashboardView.classList.add('hidden');
+            this.elements.syncView.classList.add('hidden');
             this.elements.uploadView.classList.remove('hidden');
             this.elements.resetBtn.classList.add('hidden');
+
+            // Reset Nav
+            this.elements.navUpload.classList.add('text-primary');
+            this.elements.navUpload.classList.remove('text-gray-400');
+            this.elements.navSync.classList.remove('text-white');
+            this.elements.navSync.classList.add('text-gray-400');
 
             // Trigger reflow
             void this.elements.uploadView.offsetWidth;
@@ -466,7 +783,7 @@ const UI = {
         // Render Profile Chart
         const dailyActivity = Analytics.getDailyActivity(posts);
         const ctx = document.getElementById('profile-chart-activity').getContext('2d');
-        
+
         if (this.charts.profileActivity) {
             this.charts.profileActivity.destroy();
         }
@@ -497,7 +814,7 @@ const UI = {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 return ` ${context.raw} Posts (Click to filter)`;
                             }
                         }
@@ -600,7 +917,7 @@ const UI = {
 
     initTableFilters(data) {
         this.allTableData = data;
-        
+
         // Extract unique dates
         const dates = [...new Set(data.map(item => item.created_at ? item.created_at.split('T')[0] : null).filter(Boolean))];
         dates.sort((a, b) => new Date(b) - new Date(a)); // Newest first
@@ -617,7 +934,7 @@ const UI = {
         // Extract unique usernames
         const usernames = [...new Set(data.map(item => item.member?.username).filter(Boolean))];
         usernames.sort((a, b) => a.localeCompare(b));
-        
+
         const userSelect = this.elements.tableFilterUsername;
         if (userSelect) {
             userSelect.innerHTML = '<option value="">All Users</option>';
@@ -637,7 +954,7 @@ const UI = {
         if (!this.allTableData) return;
 
         let filtered = [...this.allTableData];
-        
+
         const dateFilter = this.elements.tableFilterDate?.value;
         const userFilter = this.elements.tableFilterUsername?.value;
         const searchTerm = this.elements.tableSearch?.value.toLowerCase();
@@ -645,7 +962,7 @@ const UI = {
         if (dateFilter) {
             filtered = filtered.filter(item => item.created_at && item.created_at.startsWith(dateFilter));
         }
-        
+
         if (userFilter) {
             filtered = filtered.filter(item => item.member && item.member.username === userFilter);
         }
@@ -670,12 +987,12 @@ const UI = {
 
     showPostDetail(post) {
         const els = this.elements;
-        if(!els.postDetailModal) return;
-        
+        if (!els.postDetailModal) return;
+
         // Image / Video
         const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
         els.postDetailImage.src = thumbUrl || 'https://via.placeholder.com/800x600?text=No+Image';
-        
+
         if (post.content_type === 'video') {
             els.postDetailVideoIcon.classList.remove('hidden');
         } else {
@@ -686,11 +1003,11 @@ const UI = {
         els.postDetailAvatar.src = post.member?.photo || '';
         els.postDetailUsername.textContent = post.member?.username || 'Unknown';
         els.postDetailDate.textContent = post.created_at ? new Date(post.created_at).toLocaleString() : 'Unknown Date';
-        
+
         els.postDetailLikes.textContent = post.likes_count || 0;
         els.postDetailComments.textContent = post.comment_count || 0;
         els.postDetailCaption.textContent = post.caption || 'No caption provided.';
-        
+
         els.postDetailLink.href = post.url || '#';
 
         this.openModal(els.postDetailModal);
@@ -703,13 +1020,13 @@ const UI = {
         if (data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No entries found.</td></tr>`;
             const controls = document.getElementById('pagination-controls');
-            if(controls) controls.innerHTML = '';
+            if (controls) controls.innerHTML = '';
             return;
         }
 
         const itemsPerPage = 10;
         const maxPage = Math.ceil(data.length / itemsPerPage);
-        
+
         if (page > maxPage) page = maxPage;
         if (page < 1) page = 1;
 
