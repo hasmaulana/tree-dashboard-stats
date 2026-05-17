@@ -10,7 +10,20 @@ const UI = {
     elements: {
         uploadView: document.getElementById('upload-view'),
         dashboardView: document.getElementById('dashboard-view'),
+        galleryView: document.getElementById('gallery-view'),
         syncView: document.getElementById('sync-view'),
+        navDataTabs: document.getElementById('nav-data-tabs'),
+        tabDashboard: document.getElementById('tab-dashboard'),
+        tabGallery: document.getElementById('tab-gallery'),
+        gallerySearch: document.getElementById('gallery-search'),
+        galleryFilterUser: document.getElementById('gallery-filter-user'),
+        galleryFilterType: document.getElementById('gallery-filter-type'),
+        gallerySort: document.getElementById('gallery-sort'),
+        galleryClearFilters: document.getElementById('gallery-clear-filters'),
+        galleryGrid: document.getElementById('gallery-grid'),
+        galleryEmptyState: document.getElementById('gallery-empty-state'),
+        galleryStatsTotal: document.getElementById('gallery-stats-total'),
+        galleryStatsFiltered: document.getElementById('gallery-stats-filtered'),
         dropzone: document.getElementById('dropzone'),
         fileInput: document.getElementById('file-input'),
         errorMsg: document.getElementById('error-message'),
@@ -97,14 +110,16 @@ const UI = {
         this.initViewSwitching();
         this.initSyncForm();
         this.renderSyncHistory();
+        this.initGallery();
     },
 
     initViewSwitching() {
-        const { navUpload, navSync, showSyncBtn } = this.elements;
+        const { navUpload, navSync, showSyncBtn, tabDashboard, tabGallery } = this.elements;
 
         const switchView = (target) => {
-            const views = [this.elements.uploadView, this.elements.syncView, this.elements.dashboardView];
+            const views = [this.elements.uploadView, this.elements.syncView, this.elements.dashboardView, this.elements.galleryView];
             views.forEach(v => {
+                if (!v) return;
                 if (v === target) {
                     v.classList.remove('hidden');
                     setTimeout(() => v.classList.remove('opacity-0', 'translate-y-4'), 10);
@@ -120,22 +135,44 @@ const UI = {
                 navUpload.classList.remove('text-gray-400');
                 navSync.classList.add('text-gray-400');
                 navSync.classList.remove('text-white');
+                this.updateTabStyles('none');
             } else if (target === this.elements.syncView) {
                 navSync.classList.add('text-white');
                 navSync.classList.remove('text-gray-400');
                 navUpload.classList.remove('text-primary');
                 navUpload.classList.add('text-gray-400');
+                this.updateTabStyles('none');
             } else {
                 navUpload.classList.remove('text-primary');
                 navUpload.classList.add('text-gray-400');
                 navSync.classList.add('text-gray-400');
                 navSync.classList.remove('text-white');
+                
+                if (target === this.elements.dashboardView) {
+                    this.updateTabStyles('dashboard');
+                } else if (target === this.elements.galleryView) {
+                    this.updateTabStyles('gallery');
+                }
+            }
+
+            // Manage Tab Switcher visibility
+            if (window.currentData && window.currentData.length > 0 && this.elements.navDataTabs) {
+                this.elements.navDataTabs.classList.remove('hidden');
+            } else if (this.elements.navDataTabs) {
+                this.elements.navDataTabs.classList.add('hidden');
             }
         };
 
         navUpload.addEventListener('click', () => switchView(this.elements.uploadView));
         navSync.addEventListener('click', () => switchView(this.elements.syncView));
         showSyncBtn.addEventListener('click', () => switchView(this.elements.syncView));
+
+        if (tabDashboard) {
+            tabDashboard.addEventListener('click', () => switchView(this.elements.dashboardView));
+        }
+        if (tabGallery) {
+            tabGallery.addEventListener('click', () => switchView(this.elements.galleryView));
+        }
     },
 
     initSyncForm() {
@@ -489,12 +526,21 @@ const UI = {
                 this.elements.uploadView.classList.add('hidden');
                 this.elements.syncView.classList.add('hidden');
                 this.elements.dashboardView.classList.remove('hidden');
+                if (this.elements.galleryView) {
+                    this.elements.galleryView.classList.add('hidden', 'opacity-0', 'translate-y-4');
+                }
 
                 // Trigger reflow
                 void this.elements.dashboardView.offsetWidth;
 
                 this.elements.dashboardView.classList.remove('opacity-0', 'translate-y-4');
                 this.elements.resetBtn.classList.remove('hidden');
+
+                // Show data tabs
+                if (this.elements.navDataTabs) {
+                    this.elements.navDataTabs.classList.remove('hidden');
+                }
+                this.updateTabStyles('dashboard');
 
                 // Clear nav highlighting
                 this.elements.navUpload.classList.remove('text-primary');
@@ -519,6 +565,10 @@ const UI = {
             this.initTableFilters(rawData);
             this.filterAndRenderTable();
 
+            // Initialize Gallery View
+            this.populateGalleryUserFilter(rawData);
+            this.filterAndRenderGallery(rawData);
+
         } catch (err) {
             console.error("Dashboard rendering error:", err);
             this.showError("Error rendering dashboard: " + err.message);
@@ -527,11 +577,24 @@ const UI = {
 
     reset() {
         this.elements.dashboardView.classList.add('opacity-0', 'translate-y-4');
+        if (this.elements.galleryView) {
+            this.elements.galleryView.classList.add('opacity-0', 'translate-y-4');
+        }
+
         setTimeout(() => {
             this.elements.dashboardView.classList.add('hidden');
+            if (this.elements.galleryView) {
+                this.elements.galleryView.classList.add('hidden');
+            }
             this.elements.syncView.classList.add('hidden');
             this.elements.uploadView.classList.remove('hidden');
             this.elements.resetBtn.classList.add('hidden');
+
+            // Hide tabs switcher
+            if (this.elements.navDataTabs) {
+                this.elements.navDataTabs.classList.add('hidden');
+            }
+            this.updateTabStyles('none');
 
             // Reset Nav
             this.elements.navUpload.classList.add('text-primary');
@@ -1074,6 +1137,218 @@ const UI = {
                 </div>
             `;
         }
+    },
+
+    updateTabStyles(activeView) {
+        const { tabDashboard, tabGallery } = this.elements;
+        if (!tabDashboard || !tabGallery) return;
+
+        if (activeView === 'dashboard') {
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center gap-1.5 shadow-md";
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+        } else if (activeView === 'gallery') {
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center gap-1.5 shadow-md";
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+        } else {
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+        }
+    },
+
+    initGallery() {
+        const { gallerySearch, galleryFilterUser, galleryFilterType, gallerySort, galleryClearFilters } = this.elements;
+
+        if (!gallerySearch) return;
+
+        const handleFilterChange = () => {
+            this.filterAndRenderGallery();
+        };
+
+        gallerySearch.addEventListener('input', handleFilterChange);
+        galleryFilterUser.addEventListener('change', handleFilterChange);
+        galleryFilterType.addEventListener('change', handleFilterChange);
+        gallerySort.addEventListener('change', handleFilterChange);
+
+        galleryClearFilters.addEventListener('click', () => {
+            gallerySearch.value = '';
+            galleryFilterUser.value = '';
+            galleryFilterType.value = '';
+            gallerySort.value = 'newest';
+            this.filterAndRenderGallery();
+        });
+    },
+
+    populateGalleryUserFilter(data) {
+        const userSelect = this.elements.galleryFilterUser;
+        if (!userSelect) return;
+
+        // Extract unique usernames
+        const usernames = [...new Set(data.map(item => item.member?.username).filter(Boolean))];
+        usernames.sort((a, b) => a.localeCompare(b));
+
+        userSelect.innerHTML = '<option value="" class="bg-dark-light">All Creators</option>';
+        usernames.forEach(username => {
+            const opt = document.createElement('option');
+            opt.value = username;
+            opt.className = 'bg-dark-light';
+            opt.textContent = username;
+            userSelect.appendChild(opt);
+        });
+    },
+
+    filterAndRenderGallery(data) {
+        const rawData = data || window.currentData;
+        if (!rawData) return;
+
+        const { gallerySearch, galleryFilterUser, galleryFilterType, gallerySort, galleryGrid, galleryEmptyState, galleryStatsTotal, galleryStatsFiltered } = this.elements;
+
+        if (!galleryGrid) return;
+
+        let filtered = [...rawData];
+
+        // 1. Text Search Filter
+        const searchVal = gallerySearch.value.trim().toLowerCase();
+        if (searchVal) {
+            filtered = filtered.filter(item => {
+                const caption = (item.caption || '').toLowerCase();
+                const username = (item.member?.username || '').toLowerCase();
+                const type = (item.content_type || '').toLowerCase();
+                return caption.includes(searchVal) || username.includes(searchVal) || type.includes(searchVal);
+            });
+        }
+
+        // 2. User Filter
+        const userVal = galleryFilterUser.value;
+        if (userVal) {
+            filtered = filtered.filter(item => item.member?.username === userVal);
+        }
+
+        // 3. Content Type Filter
+        const typeVal = galleryFilterType.value;
+        if (typeVal) {
+            filtered = filtered.filter(item => item.content_type === typeVal);
+        }
+
+        // 4. Sorting
+        const sortVal = gallerySort.value;
+        filtered.sort((a, b) => {
+            if (sortVal === 'oldest') {
+                return new Date(a.created_at) - new Date(b.created_at);
+            } else if (sortVal === 'likes') {
+                return (b.likes_count || 0) - (a.likes_count || 0);
+            } else if (sortVal === 'comments') {
+                return (b.comment_count || 0) - (a.comment_count || 0);
+            } else { // default: newest
+                return new Date(b.created_at) - new Date(a.created_at);
+            }
+        });
+
+        // 5. Update Stats
+        if (galleryStatsTotal) galleryStatsTotal.textContent = rawData.length;
+        if (galleryStatsFiltered) galleryStatsFiltered.textContent = filtered.length;
+
+        // 6. Render
+        galleryGrid.innerHTML = '';
+
+        if (filtered.length === 0) {
+            galleryEmptyState.classList.remove('hidden');
+            return;
+        } else {
+            galleryEmptyState.classList.add('hidden');
+        }
+
+        // Setup IntersectionObserver for lazy loading
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    
+                    // Remove skeleton background class once loaded
+                    img.onload = () => {
+                        img.classList.remove('opacity-0');
+                        const skeleton = img.previousElementSibling;
+                        if (skeleton && skeleton.classList.contains('animate-shimmer')) {
+                            skeleton.classList.add('opacity-0');
+                            setTimeout(() => skeleton.remove(), 500);
+                        }
+                    };
+                    obs.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '100px 0px', // start loading slightly before they scroll into view
+            threshold: 0.01
+        });
+
+        filtered.forEach(post => {
+            const card = document.createElement('div');
+            card.className = "group relative bg-white/5 border border-white/5 hover:border-primary/40 rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/5 flex flex-col justify-between";
+            
+            const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
+            const avatarUrl = post.member?.photo || '';
+            const username = post.member?.username || 'Unknown';
+            const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Unknown Date';
+            const likes = post.likes_count || 0;
+            const comments = post.comment_count || 0;
+            const caption = post.caption || '';
+            
+            const isVideo = post.content_type === 'video';
+            const badgeHtml = isVideo 
+                ? `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-video text-[8px]"></i> Video</div>`
+                : `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-camera text-[8px]"></i> Image</div>`;
+
+            card.innerHTML = `
+                <!-- Shimmer Skeleton Preloader -->
+                <div class="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:200%_100%] animate-shimmer z-0 transition-opacity duration-500"></div>
+                
+                <!-- Lazy Loaded Image -->
+                <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-500 z-10" alt="${caption}">
+                
+                <!-- Media Type Badge -->
+                ${badgeHtml}
+
+                <!-- Glassmorphic Details Overlay (shows on hover) -->
+                <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 p-4 flex flex-col justify-between">
+                    <!-- Top Part: Member avatar & username -->
+                    <div class="flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                        ${avatarUrl 
+                            ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full border border-white/20 object-cover" onerror="this.src='https://via.placeholder.com/24'">`
+                            : `<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">${username.substring(0, 2).toUpperCase()}</div>`
+                        }
+                        <span class="text-xs text-white font-semibold truncate max-w-[120px]">${username}</span>
+                    </div>
+
+                    <!-- Bottom Part: Description, Divider, and Stats -->
+                    <div class="space-y-2.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                        <!-- Caption Text (two lines maximum) -->
+                        <p class="text-xs text-gray-300 line-clamp-2 leading-relaxed font-normal">${caption || 'No caption'}</p>
+                        
+                        <!-- Divider Line -->
+                        <div class="border-t border-white/10"></div>
+                        
+                        <!-- Engagement & Date Footer -->
+                        <div class="flex justify-between items-center text-[10px] text-gray-400">
+                            <span class="font-medium flex items-center gap-1"><i class="fa-regular fa-calendar text-[9px]"></i> ${dateStr}</span>
+                            <div class="flex items-center gap-2.5 font-bold text-white">
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-heart text-red-500 text-[9px]"></i> ${likes}</span>
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-comment text-blue-400 text-[9px]"></i> ${comments}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Click event to show detailed modal
+            card.onclick = () => {
+                this.showPostDetail(post);
+            };
+
+            const img = card.querySelector('img');
+            observer.observe(img);
+
+            galleryGrid.appendChild(card);
+        });
     }
 };
 
