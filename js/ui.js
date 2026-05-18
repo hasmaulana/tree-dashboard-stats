@@ -49,6 +49,31 @@ const UI = {
         syncHistoryList: document.getElementById('sync-history-list'),
         syncHistoryClear: document.getElementById('sync-history-clear'),
 
+        // Auto Download & Manual Download
+        syncDownloadToggle: document.getElementById('sync-download-toggle'),
+        syncDownloadKnob: document.getElementById('sync-download-knob'),
+        downloadJsonBtn: document.getElementById('download-json-btn'),
+
+        // Sync Continue Banner
+        syncContinueBanner: document.getElementById('sync-continue-banner'),
+        syncContinueBtn: document.getElementById('sync-continue-btn'),
+        syncBannerName: document.getElementById('sync-banner-name'),
+
+        // Continue Sync Modal
+        continueSyncModal: document.getElementById('continue-sync-modal'),
+        contSyncTreeId: document.getElementById('cont-sync-tree-id'),
+        contSyncName: document.getElementById('cont-sync-name'),
+        contSyncExisting: document.getElementById('cont-sync-existing'),
+        contSyncLoopPages: document.getElementById('cont-sync-loop-pages'),
+        contSyncProgress: document.getElementById('cont-sync-progress'),
+        contSyncProgressBar: document.getElementById('cont-sync-progress-bar'),
+        contSyncStatus: document.getElementById('cont-sync-status'),
+        contSyncPercent: document.getElementById('cont-sync-percent'),
+        contSyncStatsAdded: document.getElementById('cont-sync-stats-added'),
+        contSyncStatsStatus: document.getElementById('cont-sync-stats-status'),
+        contSyncFooter: document.getElementById('cont-sync-footer'),
+        contSyncSubmit: document.getElementById('cont-sync-submit'),
+
         // Stats
         totalPosts: document.getElementById('stat-total-posts'),
         totalMembers: document.getElementById('stat-total-members'),
@@ -147,7 +172,7 @@ const UI = {
                 navUpload.classList.add('text-gray-400');
                 navSync.classList.add('text-gray-400');
                 navSync.classList.remove('text-white');
-                
+
                 if (target === this.elements.dashboardView) {
                     this.updateTabStyles('dashboard');
                 } else if (target === this.elements.galleryView) {
@@ -191,6 +216,33 @@ const UI = {
             });
         }
 
+        // Download Toggle Logic
+        this.syncDownloadJson = true;
+        if (this.elements.syncDownloadToggle) {
+            this.elements.syncDownloadToggle.addEventListener('click', () => {
+                this.syncDownloadJson = !this.syncDownloadJson;
+                this.updateSyncDownloadUI();
+            });
+        }
+
+        // Manual Download Click Handler
+        if (this.elements.downloadJsonBtn) {
+            this.elements.downloadJsonBtn.addEventListener('click', () => {
+                if (!window.currentData || window.currentData.length === 0) {
+                    this.showError("No data to download.");
+                    return;
+                }
+                const name = (window.loadedSyncMeta && window.loadedSyncMeta.request_params && window.loadedSyncMeta.request_params.name) || 'tree_data';
+                const payload = window.loadedSyncMeta ? {
+                    sync_meta: window.loadedSyncMeta,
+                    results: window.currentData
+                } : window.currentData;
+
+                const filename = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_sync_data.json`;
+                this.downloadJSON(payload, filename);
+            });
+        }
+
         // Auto-fill from last session if available
         const lastSync = this.getCookie('last_sync');
         if (lastSync) {
@@ -202,6 +254,10 @@ const UI = {
                 if (data.is_raw !== undefined) {
                     this.syncIsRawMode = data.is_raw;
                     this.updateSyncModeUI();
+                }
+                if (data.download_json !== undefined) {
+                    this.syncDownloadJson = data.download_json;
+                    this.updateSyncDownloadUI();
                 }
             } catch (e) { }
         }
@@ -225,6 +281,22 @@ const UI = {
         }
     },
 
+    updateSyncDownloadUI() {
+        const knob = this.elements.syncDownloadKnob;
+        const toggle = this.elements.syncDownloadToggle;
+        if (!knob || !toggle) return;
+
+        if (this.syncDownloadJson) {
+            knob.style.left = 'calc(100% - 19px)';
+            knob.classList.replace('bg-gray-500', 'bg-primary');
+            toggle.classList.replace('bg-white/10', 'bg-primary/20');
+        } else {
+            knob.style.left = '3px';
+            knob.classList.replace('bg-primary', 'bg-gray-500');
+            toggle.classList.replace('bg-primary/20', 'bg-white/10');
+        }
+    },
+
     async startSync() {
         const name = this.elements.syncName.value.trim() || 'Untitled Request';
         const treeId = this.elements.syncTreeId.value.trim();
@@ -241,7 +313,7 @@ const UI = {
 
         // Save to cookies
         this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode);
-        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, token, is_raw: this.syncIsRawMode }));
+        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, token, is_raw: this.syncIsRawMode, download_json: this.syncDownloadJson }));
 
         // UI Reset
         this.elements.syncProgressContainer.classList.remove('hidden');
@@ -287,6 +359,30 @@ const UI = {
         setTimeout(() => {
             if (allResults.length > 0) {
                 window.currentData = allResults;
+
+                // Package and assign sync metadata
+                window.loadedSyncMeta = {
+                    app: "TreeStats",
+                    version: "1.0",
+                    download_date: new Date().toISOString(),
+                    request_params: {
+                        name,
+                        tree_id: treeId,
+                        pages: inputVal,
+                        token,
+                        is_raw: this.syncIsRawMode
+                    }
+                };
+
+                // Auto download complete JSON structure
+                if (this.syncDownloadJson) {
+                    const payload = {
+                        sync_meta: window.loadedSyncMeta,
+                        results: allResults
+                    };
+                    this.downloadJSON(payload, `${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_sync_data.json`);
+                }
+
                 const stats = Analytics.process(allResults);
                 this.showDashboard(stats, allResults);
             } else {
@@ -380,7 +476,7 @@ const UI = {
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             `;
-            
+
             item.onclick = (e) => {
                 if (e.target.closest('.delete-history-btn')) return; // Ignore if delete button clicked
                 this.elements.syncName.value = h.name;
@@ -467,10 +563,36 @@ const UI = {
             this.elements.leaderboardSearch.addEventListener('input', filterLeaderboard);
             this.elements.leaderboardSort.addEventListener('change', filterLeaderboard);
         }
+
+        // Sync Continue Listener
+        if (this.elements.syncContinueBtn) {
+            this.elements.syncContinueBtn.addEventListener('click', () => {
+                if (!window.loadedSyncMeta || !window.loadedSyncMeta.request_params) {
+                    this.showError("No active sync configuration found in this dataset.");
+                    return;
+                }
+                const params = window.loadedSyncMeta.request_params;
+                this.elements.contSyncTreeId.textContent = params.tree_id;
+                this.elements.contSyncName.textContent = params.name || 'Untitled Request';
+                this.elements.contSyncExisting.textContent = window.currentData.length;
+
+                // Reset progress states inside modal
+                this.elements.contSyncProgress.classList.add('hidden');
+                this.elements.contSyncFooter.classList.remove('hidden');
+                this.elements.contSyncSubmit.disabled = false;
+                this.elements.contSyncSubmit.innerHTML = '<i class="fa-solid fa-play"></i> Start Fetch';
+
+                this.openModal(this.elements.continueSyncModal);
+            });
+        }
+
+        if (this.elements.contSyncSubmit) {
+            this.elements.contSyncSubmit.addEventListener('click', () => this.startContinueSync());
+        }
     },
 
     openModal(modal) {
-        [this.elements.userProfileModal, this.elements.postDetailModal].forEach(m => {
+        [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal].forEach(m => {
             if (m && m !== modal && !m.classList.contains('hidden')) {
                 m.classList.add('hidden');
                 m.classList.remove('scale-100');
@@ -491,17 +613,21 @@ const UI = {
     },
 
     closeAllModals() {
-        const modals = [this.elements.userProfileModal, this.elements.postDetailModal];
+        const modals = [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal];
 
         this.elements.modalBackdrop.classList.add('opacity-0');
         modals.forEach(m => {
-            m.classList.remove('scale-100');
-            m.classList.add('scale-95');
+            if (m) {
+                m.classList.remove('scale-100');
+                m.classList.add('scale-95');
+            }
         });
 
         setTimeout(() => {
             this.elements.modalBackdrop.classList.add('hidden');
-            modals.forEach(m => m.classList.add('hidden'));
+            modals.forEach(m => {
+                if (m) m.classList.add('hidden');
+            });
         }, 300);
     },
 
@@ -518,6 +644,20 @@ const UI = {
 
     showDashboard(stats, rawData) {
         try {
+            // Handle Sync Continue Banner
+            if (window.loadedSyncMeta && window.loadedSyncMeta.request_params) {
+                const params = window.loadedSyncMeta.request_params;
+                this.elements.syncBannerName.textContent = params.name || params.tree_id;
+                this.elements.syncContinueBanner.classList.remove('hidden');
+            } else {
+                this.elements.syncContinueBanner.classList.add('hidden');
+            }
+
+            // Show manual Download JSON button
+            if (this.elements.downloadJsonBtn) {
+                this.elements.downloadJsonBtn.classList.remove('hidden');
+            }
+
             // Animation: Hide Upload/Sync, Show Dashboard
             this.elements.uploadView.classList.add('opacity-0', '-translate-y-4');
             this.elements.syncView.classList.add('opacity-0', 'translate-y-4');
@@ -590,6 +730,12 @@ const UI = {
             this.elements.uploadView.classList.remove('hidden');
             this.elements.resetBtn.classList.add('hidden');
 
+            // Clear global metadata and hide manual download button
+            window.loadedSyncMeta = null;
+            if (this.elements.downloadJsonBtn) {
+                this.elements.downloadJsonBtn.classList.add('hidden');
+            }
+
             // Hide tabs switcher
             if (this.elements.navDataTabs) {
                 this.elements.navDataTabs.classList.add('hidden');
@@ -646,6 +792,11 @@ const UI = {
     },
 
     renderCharts(stats) {
+        // Destroy existing chart instances to allow canvas re-use
+        if (this.charts.activity) this.charts.activity.destroy();
+        if (this.charts.content) this.charts.content.destroy();
+        if (this.charts.engagement) this.charts.engagement.destroy();
+
         // Activity Chart (Line)
         const activityCtx = document.getElementById('chart-activity').getContext('2d');
         this.charts.activity = new Chart(activityCtx, {
@@ -786,7 +937,7 @@ const UI = {
             tr.onclick = () => this.showUserDetail(user.username);
 
             const avatarHtml = user.avatar
-                ? `<img src="${user.avatar}" class="w-8 h-8 rounded-full bg-gray-700 object-cover mr-3 inline-block" onerror="this.src='https://via.placeholder.com/32'">`
+                ? `<img src="${user.avatar}" class="w-8 h-8 rounded-full bg-gray-700 object-cover mr-3 inline-block" onerror="this.src=''">`
                 : `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white mr-3 inline-block">${user.username.substring(0, 2).toUpperCase()}</div>`;
 
             const avgLikes = (user.count > 0 ? (user.likes / user.count) : 0).toFixed(1);
@@ -1263,7 +1414,7 @@ const UI = {
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     img.src = img.dataset.src;
-                    
+
                     // Remove skeleton background class once loaded
                     img.onload = () => {
                         img.classList.remove('opacity-0');
@@ -1284,7 +1435,7 @@ const UI = {
         filtered.forEach(post => {
             const card = document.createElement('div');
             card.className = "group relative bg-white/5 border border-white/5 hover:border-primary/40 rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/5 flex flex-col justify-between";
-            
+
             const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
             const avatarUrl = post.member?.photo || '';
             const username = post.member?.username || 'Unknown';
@@ -1292,9 +1443,9 @@ const UI = {
             const likes = post.likes_count || 0;
             const comments = post.comment_count || 0;
             const caption = post.caption || '';
-            
+
             const isVideo = post.content_type === 'video';
-            const badgeHtml = isVideo 
+            const badgeHtml = isVideo
                 ? `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-video text-[8px]"></i> Video</div>`
                 : `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-camera text-[8px]"></i> Image</div>`;
 
@@ -1312,10 +1463,10 @@ const UI = {
                 <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 p-4 flex flex-col justify-between">
                     <!-- Top Part: Member avatar & username -->
                     <div class="flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                        ${avatarUrl 
-                            ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full border border-white/20 object-cover" onerror="this.src='https://via.placeholder.com/24'">`
-                            : `<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">${username.substring(0, 2).toUpperCase()}</div>`
-                        }
+                        ${avatarUrl
+                    ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full border border-white/20 object-cover" onerror="this.src=''">`
+                    : `<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">${username.substring(0, 2).toUpperCase()}</div>`
+                }
                         <span class="text-xs text-white font-semibold truncate max-w-[120px]">${username}</span>
                     </div>
 
@@ -1349,6 +1500,148 @@ const UI = {
 
             galleryGrid.appendChild(card);
         });
+    },
+
+    downloadJSON(data, filename) {
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    async startContinueSync() {
+        if (!window.loadedSyncMeta || !window.loadedSyncMeta.request_params) {
+            this.showError("No active sync configuration found in this dataset.");
+            return;
+        }
+
+        const params = window.loadedSyncMeta.request_params;
+        const treeId = params.tree_id;
+        const token = params.token;
+        const loopPages = parseInt(this.elements.contSyncLoopPages.value) || 5;
+
+        // UI Updates inside modal
+        this.elements.contSyncProgress.classList.remove('hidden');
+        this.elements.contSyncFooter.classList.add('hidden');
+        this.elements.contSyncSubmit.disabled = true;
+        this.elements.contSyncSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Running...';
+
+        const existingIds = new Set(window.currentData.map(item => item.leaf_id || item.id).filter(Boolean));
+        let newItems = [];
+        let dupFound = false;
+        let totalPagesRun = 0;
+
+        for (let i = 1; i <= loopPages && !dupFound; i++) {
+            totalPagesRun = i;
+            const percent = Math.round(((i - 1) / loopPages) * 100);
+            this.elements.contSyncProgressBar.style.width = `${percent}%`;
+            this.elements.contSyncPercent.textContent = `${percent}%`;
+            this.elements.contSyncStatus.textContent = `Fetching page ${i}...`;
+            this.elements.contSyncStatsAdded.textContent = `Added: ${newItems.length} items`;
+            this.elements.contSyncStatsStatus.textContent = `Processing page ${i} of ${loopPages}`;
+
+            try {
+                const url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(url, { headers });
+                if (!response.ok) throw new Error(`HTTP error status: ${response.status}`);
+
+                const data = await response.json();
+                const results = data.result || [];
+
+                if (results.length === 0) {
+                    this.elements.contSyncStatus.textContent = `No more data on API.`;
+                    break;
+                }
+
+                for (const item of results) {
+                    const leafId = item.leaf_id || item.id;
+                    if (leafId && existingIds.has(leafId)) {
+                        dupFound = true;
+                        break;
+                    }
+                    newItems.push(item);
+                }
+
+                // artificial delay for smooth UI transition
+                await new Promise(r => setTimeout(r, 400));
+
+            } catch (err) {
+                console.error(err);
+                this.elements.contSyncStatus.textContent = `Error: ${err.message}`;
+                break;
+            }
+        }
+
+        // Final UI Updates
+        this.elements.contSyncProgressBar.style.width = `100%`;
+        this.elements.contSyncPercent.textContent = `100%`;
+
+        if (dupFound) {
+            this.elements.contSyncStatus.textContent = `Finished! Reached previously synced data.`;
+            this.elements.contSyncStatsStatus.textContent = `Overlap found. Stop triggered.`;
+        } else {
+            this.elements.contSyncStatus.textContent = `Finished running all ${totalPagesRun} pages!`;
+            this.elements.contSyncStatsStatus.textContent = `All pages processed.`;
+        }
+        this.elements.contSyncStatsAdded.textContent = `Successfully added: ${newItems.length} new items`;
+
+        // Update dashboard and merge data
+        if (newItems.length > 0) {
+            const merged = [...newItems, ...window.currentData];
+
+            // Clear duplicates by leaf_id / id
+            const seenIds = new Set();
+            const deduplicated = [];
+            for (const item of merged) {
+                const leafId = item ? (item.leaf_id || item.id) : null;
+                if (leafId) {
+                    if (seenIds.has(leafId)) continue;
+                    seenIds.add(leafId);
+                }
+                deduplicated.push(item);
+            }
+
+            window.currentData = deduplicated;
+
+            // Reprocess analytics
+            const stats = Analytics.process(deduplicated);
+
+            // Re-render dashboard
+            this.showDashboard(stats, deduplicated);
+
+            // If auto-download toggle was checked, or by default, offer them the updated file download!
+            if (this.syncDownloadJson) {
+                const name = params.name || 'updated_sync';
+                const payload = {
+                    sync_meta: {
+                        ...window.loadedSyncMeta,
+                        download_date: new Date().toISOString(),
+                        request_params: {
+                            ...params,
+                            pages: Math.max(params.pages || 0, totalPagesRun)
+                        }
+                    },
+                    results: deduplicated
+                };
+                setTimeout(() => {
+                    this.downloadJSON(payload, `${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_updated_sync_data.json`);
+                }, 1000);
+            }
+        }
+
+        // Enable buttons again after completion and close
+        setTimeout(() => {
+            this.closeAllModals();
+        }, 2500);
     }
 };
 

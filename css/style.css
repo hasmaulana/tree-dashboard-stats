@@ -61,3 +61,12 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite linear;
 }
+
+@keyframes pulseSubtle {
+    0%, 100% { opacity: 0.95; }
+    50% { opacity: 1; border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15); }
+}
+.animate-pulse-subtle {
+    animation: pulseSubtle 3s infinite ease-in-out;
+}
+

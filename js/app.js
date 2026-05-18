@@ -73,22 +73,32 @@ function handleFile(file) {
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
+            let processedData = data;
+            let syncMeta = null;
 
-            // Basic validation
-            if (!Array.isArray(data)) {
-                throw new Error("JSON must be an array of objects");
+            // Check if it's the premium sync format with request params
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                if (data.results && Array.isArray(data.results)) {
+                    processedData = data.results;
+                    syncMeta = data.sync_meta || null;
+                } else {
+                    throw new Error("Invalid sync file format. Missing 'results' array.");
+                }
+            } else if (!Array.isArray(data)) {
+                throw new Error("JSON must be an array of objects or a sync JSON format");
             }
 
-            console.log("Data loaded", data.length, "items");
+            console.log("Data loaded", processedData.length, "items");
 
-            // Store globally for filtering/sorting
-            window.currentData = data;
+            // Store globally for filtering/sorting/syncing
+            window.currentData = processedData;
+            window.loadedSyncMeta = syncMeta;
 
             // Process
-            const stats = Analytics.process(data);
+            const stats = Analytics.process(processedData);
 
             // Show UI
-            UI.showDashboard(stats, data);
+            UI.showDashboard(stats, processedData);
 
         } catch (err) {
             console.error(err);
