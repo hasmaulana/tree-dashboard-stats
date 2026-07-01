@@ -35,6 +35,12 @@ const UI = {
         // Sync Form
         syncName: document.getElementById('sync-name'),
         syncTreeId: document.getElementById('sync-tree-id'),
+        syncMemberId: document.getElementById('sync-member-id'),
+        syncSourceTree: document.getElementById('sync-source-tree'),
+        syncSourceMember: document.getElementById('sync-source-member'),
+        syncTreeIdContainer: document.getElementById('sync-tree-id-container'),
+        syncMemberIdContainer: document.getElementById('sync-member-id-container'),
+        syncMemberIdLabel: document.getElementById('sync-member-id-label'),
         syncPages: document.getElementById('sync-pages'),
         syncPagesLabel: document.getElementById('sync-pages-label'),
         syncModeToggle: document.getElementById('sync-mode-toggle'),
@@ -77,6 +83,10 @@ const UI = {
         // Stats
         totalPosts: document.getElementById('stat-total-posts'),
         totalMembers: document.getElementById('stat-total-members'),
+        statTotalMembersLabel: document.getElementById('stat-total-members-label'),
+        leaderboardTitle: document.getElementById('leaderboard-title'),
+        leaderboardSubtitle: document.getElementById('leaderboard-subtitle'),
+        leaderboardColUser: document.getElementById('leaderboard-col-user'),
         totalInteractions: document.getElementById('stat-total-interactions'),
         avgLikes: document.getElementById('stat-avg-likes'),
 
@@ -95,6 +105,10 @@ const UI = {
         // Modals
         modalBackdrop: document.getElementById('modal-backdrop'),
         userProfileModal: document.getElementById('user-profile-modal'),
+        dailyPostsModal: document.getElementById('daily-posts-modal'),
+        dailyPostsTitle: document.getElementById('daily-posts-title'),
+        dailyPostsSubtitle: document.getElementById('daily-posts-subtitle'),
+        dailyPostsGallery: document.getElementById('daily-posts-gallery'),
 
         // Post Detail Modal
         postDetailModal: document.getElementById('post-detail-modal'),
@@ -207,6 +221,21 @@ const UI = {
             this.elements.syncHistoryClear.addEventListener('click', () => this.clearSyncHistory());
         }
 
+        // API Source Selector Logic
+        this.syncSource = 'tree';
+        if (this.elements.syncSourceTree) {
+            this.elements.syncSourceTree.addEventListener('click', () => {
+                this.syncSource = 'tree';
+                this.updateSyncSourceUI();
+            });
+        }
+        if (this.elements.syncSourceMember) {
+            this.elements.syncSourceMember.addEventListener('click', () => {
+                this.syncSource = 'member';
+                this.updateSyncSourceUI();
+            });
+        }
+
         // Mode Toggle Logic
         this.syncIsRawMode = false;
         if (this.elements.syncModeToggle) {
@@ -249,6 +278,7 @@ const UI = {
             try {
                 const data = JSON.parse(lastSync);
                 this.elements.syncTreeId.value = data.tree_id || '';
+                this.elements.syncMemberId.value = data.member_id || '';
                 this.elements.syncName.value = data.name || '';
                 this.elements.syncToken.value = data.token || '';
                 if (data.is_raw !== undefined) {
@@ -259,7 +289,32 @@ const UI = {
                     this.syncDownloadJson = data.download_json;
                     this.updateSyncDownloadUI();
                 }
+                if (data.sync_source !== undefined) {
+                    this.syncSource = data.sync_source;
+                }
             } catch (e) { }
+        }
+        this.updateSyncSourceUI();
+    },
+
+    updateSyncSourceUI() {
+        const treeBtn = this.elements.syncSourceTree;
+        const memberBtn = this.elements.syncSourceMember;
+        const treeContainer = this.elements.syncTreeIdContainer;
+        const memberLabel = this.elements.syncMemberIdLabel;
+
+        if (!treeBtn || !memberBtn) return;
+
+        if (this.syncSource === 'member') {
+            treeBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            memberBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            if (treeContainer) treeContainer.classList.add('hidden');
+            if (memberLabel) memberLabel.textContent = "Member ID (Required)";
+        } else {
+            treeBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            memberBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            if (treeContainer) treeContainer.classList.remove('hidden');
+            if (memberLabel) memberLabel.textContent = "Member ID (Optional)";
         }
     },
 
@@ -300,20 +355,28 @@ const UI = {
     async startSync() {
         const name = this.elements.syncName.value.trim() || 'Untitled Request';
         const treeId = this.elements.syncTreeId.value.trim();
+        const memberId = this.elements.syncMemberId.value.trim();
         const inputVal = parseInt(this.elements.syncPages.value) || 1;
         const token = this.elements.syncToken.value.trim();
 
-        if (!treeId) {
-            this.showError("Please enter a Tree ID.");
-            return;
+        if (this.syncSource === 'member') {
+            if (!memberId) {
+                this.showError("Please enter a Member ID.");
+                return;
+            }
+        } else {
+            if (!treeId) {
+                this.showError("Please enter a Tree ID.");
+                return;
+            }
         }
 
         // Calculate actual pages
         const pages = this.syncIsRawMode ? Math.ceil(inputVal / 20) : inputVal;
 
         // Save to cookies
-        this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode);
-        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, token, is_raw: this.syncIsRawMode, download_json: this.syncDownloadJson }));
+        this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode, memberId, this.syncSource);
+        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, member_id: memberId, token, is_raw: this.syncIsRawMode, download_json: this.syncDownloadJson, sync_source: this.syncSource }));
 
         // UI Reset
         this.elements.syncProgressContainer.classList.remove('hidden');
@@ -327,7 +390,15 @@ const UI = {
             this.updateSyncProgress(i, pages, `Fetching page ${i}...`, allResults.length);
 
             try {
-                const url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                let url;
+                if (this.syncSource === 'member') {
+                    url = `https://api.fotoyu.com/post/v1/posts?page=${i}&limit=20&member_id=${memberId}`;
+                } else {
+                    url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                    if (memberId) {
+                        url += `&member_id=${memberId}`;
+                    }
+                }
                 const headers = {};
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -368,9 +439,11 @@ const UI = {
                     request_params: {
                         name,
                         tree_id: treeId,
+                        member_id: memberId,
                         pages: inputVal,
                         token,
-                        is_raw: this.syncIsRawMode
+                        is_raw: this.syncIsRawMode,
+                        sync_source: this.syncSource
                     }
                 };
 
@@ -403,7 +476,7 @@ const UI = {
         this.elements.syncCount.textContent = `Total items collected: ${count}`;
     },
 
-    saveSyncHistory(name, tree_id, pages, token, is_raw = false) {
+    saveSyncHistory(name, tree_id, pages, token, is_raw = false, member_id = '', sync_source = 'tree') {
         let history = [];
         const existing = this.getCookie('sync_history');
         if (existing) {
@@ -411,8 +484,8 @@ const UI = {
         }
 
         // Remove duplicate and add to top
-        history = history.filter(h => h.tree_id !== tree_id || h.name !== name);
-        history.unshift({ name, tree_id, pages, token, is_raw, date: new Date().toISOString() });
+        history = history.filter(h => h.tree_id !== tree_id || h.name !== name || h.member_id !== member_id || h.sync_source !== sync_source);
+        history.unshift({ name, tree_id, pages, token, is_raw, member_id, sync_source, date: new Date().toISOString() });
 
         // Limit to 20
         if (history.length > 20) history = history.slice(0, 20);
@@ -469,7 +542,9 @@ const UI = {
                     <span class="text-[10px] text-gray-500">${date}</span>
                 </div>
                 <div class="flex items-center justify-between text-xs text-gray-400">
-                    <span class="truncate max-w-[150px]">ID: ${h.tree_id}</span>
+                    <span class="truncate max-w-[180px]" title="Source: ${h.sync_source === 'member' ? 'Member' : 'Tree'}${h.sync_source === 'member' ? ` | Member: ${h.member_id}` : ` | Tree: ${h.tree_id}${h.member_id ? ` | Mem: ${h.member_id}` : ''}`}">
+                        ${h.sync_source === 'member' ? `Mem: ${h.member_id}` : `Tree: ${h.tree_id}${h.member_id ? ` | Mem: ${h.member_id}` : ''}`}
+                    </span>
                     <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px]">${h.is_raw ? 'Raw' : 'Pages'}</span>
                 </div>
                 <button class="delete-history-btn absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1" title="Delete Item">
@@ -481,9 +556,12 @@ const UI = {
                 if (e.target.closest('.delete-history-btn')) return; // Ignore if delete button clicked
                 this.elements.syncName.value = h.name;
                 this.elements.syncTreeId.value = h.tree_id;
+                this.elements.syncMemberId.value = h.member_id || '';
                 this.elements.syncPages.value = h.pages;
                 this.elements.syncToken.value = h.token || '';
                 this.syncIsRawMode = !!h.is_raw;
+                this.syncSource = h.sync_source || 'tree';
+                this.updateSyncSourceUI();
                 this.updateSyncModeUI();
             };
 
@@ -572,7 +650,7 @@ const UI = {
                     return;
                 }
                 const params = window.loadedSyncMeta.request_params;
-                this.elements.contSyncTreeId.textContent = params.tree_id;
+                this.elements.contSyncTreeId.textContent = params.tree_id || params.member_id;
                 this.elements.contSyncName.textContent = params.name || 'Untitled Request';
                 this.elements.contSyncExisting.textContent = window.currentData.length;
 
@@ -592,7 +670,7 @@ const UI = {
     },
 
     openModal(modal) {
-        [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal].forEach(m => {
+        [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal, this.elements.dailyPostsModal].forEach(m => {
             if (m && m !== modal && !m.classList.contains('hidden')) {
                 m.classList.add('hidden');
                 m.classList.remove('scale-100');
@@ -613,7 +691,7 @@ const UI = {
     },
 
     closeAllModals() {
-        const modals = [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal];
+        const modals = [this.elements.userProfileModal, this.elements.postDetailModal, this.elements.continueSyncModal, this.elements.dailyPostsModal];
 
         this.elements.modalBackdrop.classList.add('opacity-0');
         modals.forEach(m => {
@@ -632,7 +710,7 @@ const UI = {
     },
 
     showUserDetail(username) {
-        const details = Analytics.getMemberDetails(window.currentData, username);
+        const details = Analytics.getMemberDetails(window.currentData, username, this.isMemberApiMode);
         if (!details) return;
 
         this.renderUserProfile(details);
@@ -644,10 +722,34 @@ const UI = {
 
     showDashboard(stats, rawData) {
         try {
+            // Determine if it's Member API data
+            const isMemberApi = (window.loadedSyncMeta && window.loadedSyncMeta.request_params && window.loadedSyncMeta.request_params.sync_source === 'member') ||
+                                (rawData.length > 0 && !rawData[0].member && rawData[0].username) ||
+                                (rawData.length > 0 && new Set(rawData.map(item => item.member && item.member.username).filter(Boolean)).size <= 1 && rawData.some(item => item.tag && item.tag.name));
+
+            this.isMemberApiMode = isMemberApi;
+
+            // Update UI elements based on API mode
+            if (this.elements.statTotalMembersLabel) {
+                this.elements.statTotalMembersLabel.textContent = isMemberApi ? "Active Tags" : "Active Members";
+            }
+            if (this.elements.leaderboardTitle) {
+                this.elements.leaderboardTitle.textContent = isMemberApi ? "Top Tags" : "Top Contributors";
+            }
+            if (this.elements.leaderboardSubtitle) {
+                this.elements.leaderboardSubtitle.textContent = isMemberApi ? "Top performing tags" : "Top performing members";
+            }
+            if (this.elements.leaderboardColUser) {
+                this.elements.leaderboardColUser.textContent = isMemberApi ? "Tag Name" : "User";
+            }
+            if (this.elements.leaderboardSearch) {
+                this.elements.leaderboardSearch.placeholder = isMemberApi ? "Search tag..." : "Search user...";
+            }
+
             // Handle Sync Continue Banner
             if (window.loadedSyncMeta && window.loadedSyncMeta.request_params) {
                 const params = window.loadedSyncMeta.request_params;
-                this.elements.syncBannerName.textContent = params.name || params.tree_id;
+                this.elements.syncBannerName.textContent = params.name || params.tree_id || params.member_id;
                 this.elements.syncContinueBanner.classList.remove('hidden');
             } else {
                 this.elements.syncContinueBanner.classList.add('hidden');
@@ -698,7 +800,7 @@ const UI = {
             }
 
             // Store and Render full leaderboard
-            this.allLeaderboardUsers = Analytics.getTopUsers(rawData, 0); // Store for filtering
+            this.allLeaderboardUsers = Analytics.getTopUsers(rawData, 0, this.isMemberApiMode); // Store for filtering
             this.filterAndRenderLeaderboard(); // Initial render
 
             // Initialize and Render Table
@@ -819,7 +921,18 @@ const UI = {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    zoom: stats.dailyActivity.length > 15 ? {
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x',
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                        }
+                    } : {}
                 },
                 scales: {
                     y: {
@@ -828,6 +941,13 @@ const UI = {
                     },
                     x: {
                         grid: { display: false }
+                    }
+                },
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const clickedDate = stats.dailyActivity[index].date;
+                        this.showDailyPosts(clickedDate);
                     }
                 }
             }
@@ -1127,6 +1247,70 @@ const UI = {
 
             els.profileGallery.appendChild(item);
         });
+    },
+
+    showDailyPosts(date) {
+        const posts = window.currentData.filter(p => {
+            if (!p.created_at) return false;
+            return p.created_at.split('T')[0] === date;
+        });
+
+        const els = this.elements;
+        els.dailyPostsTitle.textContent = `Posts from ${date}`;
+        els.dailyPostsSubtitle.textContent = `Total items: ${posts.length}`;
+
+        els.dailyPostsGallery.innerHTML = '';
+
+        if (posts.length === 0) {
+            els.dailyPostsGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-400 border border-white/5 rounded-lg border-dashed">No posts found for this date.</div>`;
+        } else {
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.classList.remove('opacity-0');
+                        obs.unobserve(img);
+                    }
+                });
+            });
+
+            posts.forEach(post => {
+                const item = document.createElement('div');
+                item.className = "aspect-[2/3] bg-white/5 rounded-lg overflow-hidden relative group border border-white/5";
+
+                const likes = post.likes_count || 0;
+                const comments = post.comment_count || 0;
+                const isVideo = post.content_type === 'video';
+                const icon = isVideo ? '<i class="fa-solid fa-video absolute top-2 right-2 text-white/80 drop-shadow-md"></i>' : '';
+
+                const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
+
+                item.innerHTML = `
+                    <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" alt="${post.caption || ''}">
+                    ${icon}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                        <p class="text-[10px] text-gray-300 mb-1 font-medium"><i class="fa-regular fa-calendar mr-1"></i> ${new Date(post.created_at).toLocaleDateString()}</p>
+                        <div class="flex justify-between items-center text-xs text-white">
+                            <span><i class="fa-solid fa-heart text-red-400 mr-1"></i> ${likes}</span>
+                            <span><i class="fa-solid fa-comment text-white/70 mr-1"></i> ${comments}</span>
+                        </div>
+                    </div>
+                `;
+
+                const img = item.querySelector('img');
+                observer.observe(img);
+
+                item.style.cursor = "pointer";
+                item.onclick = () => {
+                    this.showPostDetail(post);
+                };
+
+                els.dailyPostsGallery.appendChild(item);
+            });
+        }
+
+        this.openModal(els.dailyPostsModal);
     },
 
     initTableFilters(data) {
@@ -1523,6 +1707,7 @@ const UI = {
 
         const params = window.loadedSyncMeta.request_params;
         const treeId = params.tree_id;
+        const memberId = params.member_id || '';
         const token = params.token;
         const loopPages = parseInt(this.elements.contSyncLoopPages.value) || 5;
 
@@ -1547,7 +1732,15 @@ const UI = {
             this.elements.contSyncStatsStatus.textContent = `Processing page ${i} of ${loopPages}`;
 
             try {
-                const url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                let url;
+                if (params.sync_source === 'member') {
+                    url = `https://api.fotoyu.com/post/v1/posts?page=${i}&limit=20&member_id=${memberId}`;
+                } else {
+                    url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
+                    if (memberId) {
+                        url += `&member_id=${memberId}`;
+                    }
+                }
                 const headers = {};
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 

@@ -11,6 +11,7 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -177,18 +178,33 @@
                         <p class="text-sm text-gray-400">Fetch paginated data directly from Fotoyu API.</p>
                     </div>
 
+                    <!-- API Source Switcher -->
+                    <div class="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-full">
+                        <button id="sync-source-tree" type="button" class="flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none">
+                            <i class="fa-solid fa-tree"></i>
+                            <span>Tree API</span>
+                        </button>
+                        <button id="sync-source-member" type="button" class="flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Member API</span>
+                        </button>
+                    </div>
+
                     <div class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Request Name</label>
-                                <input type="text" id="sync-name" placeholder="e.g. Daily Sync" 
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tree ID</label>
-                                <input type="text" id="sync-tree-id" placeholder="Enter Tree ID..." 
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
-                            </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Request Name</label>
+                            <input type="text" id="sync-name" placeholder="e.g. Daily Sync" 
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                        </div>
+                        <div id="sync-tree-id-container" class="space-y-2">
+                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tree ID</label>
+                            <input type="text" id="sync-tree-id" placeholder="Enter Tree ID..." 
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                        </div>
+                        <div id="sync-member-id-container" class="space-y-2">
+                            <label id="sync-member-id-label" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Member ID (Optional)</label>
+                            <input type="text" id="sync-member-id" placeholder="Enter Member ID..." 
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -297,7 +313,7 @@
                         class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-sm text-gray-400 font-medium">Active Members</p>
+                                <p id="stat-total-members-label" class="text-sm text-gray-400 font-medium">Active Members</p>
                                 <h3 id="stat-total-members" class="text-3xl font-bold mt-1 text-white">-</h3>
                             </div>
                             <div class="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
@@ -360,8 +376,8 @@
                     <div class="p-6 border-b border-white/5 bg-white/5">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-0">
                             <div>
-                                <h3 class="text-lg font-bold text-white">Top Contributors</h3>
-                                <p class="text-sm text-gray-400 mt-1">Top performing members</p>
+                                <h3 id="leaderboard-title" class="text-lg font-bold text-white">Top Contributors</h3>
+                                <p id="leaderboard-subtitle" class="text-sm text-gray-400 mt-1">Top performing members</p>
                             </div>
                             <div class="flex gap-2 w-full md:w-auto">
                                 <input type="text" id="leaderboard-search" placeholder="Search user..."
@@ -381,7 +397,7 @@
                                 class="bg-dark-light text-gray-200 uppercase font-medium sticky top-0 z-10 shadow-lg">
                                 <tr>
                                     <th class="px-6 py-4 bg-dark-light/95 backdrop-blur">Rank</th>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur">User</th>
+                                    <th id="leaderboard-col-user" class="px-6 py-4 bg-dark-light/95 backdrop-blur">User</th>
                                     <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Posts</th>
                                     <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Total Likes</th>
                                     <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Avg Likes</th>
@@ -724,7 +740,7 @@
             <div class="space-y-4">
                 <div class="p-4 bg-white/5 border border-white/5 rounded-xl text-sm text-gray-300 space-y-2">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Tree ID:</span>
+                        <span class="text-gray-500">Tree/Member ID:</span>
                         <span id="cont-sync-tree-id" class="font-mono text-white font-semibold"></span>
                     </div>
                     <div class="flex justify-between">
@@ -769,6 +785,30 @@
                     <i class="fa-solid fa-play"></i>
                     <span>Start Fetch</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Daily Posts Modal -->
+        <div id="daily-posts-modal"
+            class="bg-[#1E293B] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 hidden">
+            <!-- Header -->
+            <div
+                class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+                <div>
+                    <h2 id="daily-posts-title" class="text-2xl font-bold text-white">Posts from Date</h2>
+                    <p id="daily-posts-subtitle" class="text-sm text-gray-400 mt-1">Total items: 0</p>
+                </div>
+                <button
+                    class="close-modal-btn w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                <div id="daily-posts-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Gallery items injected here -->
+                </div>
             </div>
         </div>
 
