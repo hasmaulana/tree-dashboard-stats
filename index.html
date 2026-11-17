@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tree Stats | Analytics Dashboard</title>
+    <title>TreeStats | Neobrutalist Analytics</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,337 +16,404 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Custom CSS -->
+    <!-- Custom Neobrutalism CSS -->
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- Tailwind Config for Custom Colors -->
+    <!-- Tailwind Config for Neobrutalism -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3B82F6', // Blue 500
-                        secondary: '#10B981', // Emerald 500
-                        dark: '#0F172A', // Slate 900
-                        'dark-light': '#1E293B', // Slate 800
-                        accent: '#8B5CF6', // Violet 500
+                        canvas: '#F8F6F0',
+                        primary: '#2563EB',
+                        'primary-light': '#93C5FD',
+                        yellow: '#FACC15',
+                        green: '#22C55E',
+                        pink: '#FB7185',
+                        purple: '#8B5CF6',
+                        dark: '#121212',
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neo-sm': '2px 2px 0px 0px #000000',
+                        'neo': '4px 4px 0px 0px #000000',
+                        'neo-lg': '6px 6px 0px 0px #000000',
+                        'neo-xl': '8px 8px 0px 0px #000000',
                     }
                 }
             }
         }
     </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    </style>
 </head>
 
-<body class="bg-dark text-white font-sansantialiased overflow-hidden h-screen flex flex-col">
+<body class="bg-canvas-dots text-black font-sans antialiased overflow-hidden h-screen flex flex-col">
 
-    <!-- Navbar -->
-    <nav
-        class="bg-dark-light/50 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center z-50">
+    <!-- Top Navbar -->
+    <nav class="bg-white border-b-2.5 border-black px-6 py-3.5 flex justify-between items-center z-50 shrink-0 shadow-sm">
         <div class="flex items-center gap-3">
-            <div
-                class="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white font-bold">
-                <i class="fa-solid fa-tree"></i>
+            <div class="w-10 h-10 bg-yellow border-2 border-black rounded-xl flex items-center justify-center text-black font-black shadow-neo-sm">
+                <i class="fa-solid fa-tree text-lg"></i>
             </div>
-            <h1 class="text-xl font-bold tracking-tight">Tree<span class="text-primary">Stats</span></h1>
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-black flex items-center gap-1.5 font-display">
+                    Tree<span class="bg-black text-white px-1.5 py-0.5 rounded-md text-xs font-black">STATS</span>
+                </h1>
+            </div>
         </div>
 
-        <!-- Tabs Switcher (Visible only when data is loaded) -->
-        <div id="nav-data-tabs" class="hidden flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 shrink-0">
-            <button id="tab-dashboard" class="px-3 md:px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center gap-1.5">
+        <!-- Center Tabs Switcher (Visible only when data is loaded) -->
+        <div id="nav-data-tabs" class="hidden flex items-center gap-1.5 bg-[#F8F6F0] border-2 border-black rounded-xl p-1 shrink-0 shadow-neo-sm">
+            <button id="tab-dashboard" class="px-3 md:px-4 py-1.5 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center gap-1.5 shadow-neo-sm">
                 <i class="fa-solid fa-chart-pie"></i>
                 <span class="hidden sm:inline">Dashboard</span>
             </button>
-            <button id="tab-gallery" class="px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5">
+            <button id="tab-gallery" class="px-3 md:px-4 py-1.5 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center gap-1.5">
                 <i class="fa-solid fa-images"></i>
                 <span class="hidden sm:inline">Gallery View</span>
             </button>
         </div>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-4 border-r border-white/10 pr-6">
-                <button id="nav-upload" class="text-sm font-medium text-primary transition-colors">
-                    <i class="fa-solid fa-upload mr-1"></i> Upload
+
+        <!-- Right Quick Actions -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 border-r-2 border-black/15 pr-3">
+                <button id="nav-upload" class="neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5">
+                    <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Upload</span>
                 </button>
-                <button id="nav-sync" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">
-                    <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Sync API
+                <button id="nav-sync" class="neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-sky-200 hover:bg-sky-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> <span class="hidden sm:inline">Sync API</span>
                 </button>
             </div>
-            <button id="download-json-btn" class="hidden text-sm text-primary hover:text-primary/80 transition-colors">
-                <i class="fa-solid fa-file-arrow-down mr-1"></i> Download JSON
+            <button id="download-json-btn" class="hidden neo-btn-sm px-3 py-1.5 text-xs font-bold text-black bg-emerald-200 hover:bg-emerald-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-file-arrow-down"></i> <span class="hidden sm:inline">Download JSON</span>
             </button>
-            <button id="reset-btn" class="hidden text-sm text-gray-400 hover:text-white transition-colors">
-                <i class="fa-solid fa-rotate-right mr-1"></i> Reset Data
+            <button id="reset-btn" class="hidden neo-btn-sm px-3 py-1.5 text-xs font-bold text-black bg-rose-200 hover:bg-rose-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Reset</span>
             </button>
-            <a href="#" class="text-gray-400 hover:text-white transition-colors"><i
-                    class="fa-brands fa-github text-xl"></i></a>
+            <a href="https://github.com" target="_blank" class="w-8 h-8 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 shadow-neo-sm flex items-center justify-center text-black transition-all" title="View Source">
+                <i class="fa-brands fa-github text-base"></i>
+            </a>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-1 relative overflow-hidden">
+    <!-- Main Content Canvas -->
+    <main class="flex-1 relative overflow-hidden bg-canvas-dots">
 
-        <!-- Background Elements -->
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-            <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px]"></div>
-            <div class="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-accent/20 rounded-full blur-[100px]"></div>
-        </div>
-
-        <!-- View: Upload -->
+        <!-- ===================================================================
+             VIEW 1: UPLOAD VIEW
+             =================================================================== -->
         <section id="upload-view"
-            class="h-full flex flex-col items-center justify-center p-6 transition-all duration-500 ease-in-out">
-            <div class="max-w-xl w-full text-center space-y-8">
-                <div class="space-y-2">
-                    <h2
-                        class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                        Visual Analytics
-                    </h2>
-                    <p class="text-gray-400 text-lg">
-                        Upload your JSON data to generate instant insights.
-                    </p>
-                </div>
+            class="h-full flex flex-col items-center justify-center p-6 transition-all duration-300 ease-in-out overflow-y-auto custom-scrollbar">
+            <div class="max-w-xl w-full text-center space-y-6 my-auto">
+                <!-- Neobrutalist Upload Card -->
+                <div class="bg-white border-3 border-black rounded-2xl p-8 sm:p-10 shadow-neo-lg text-center space-y-6 relative">
+                    <!-- Top Pill Badge -->
+                    <div class="inline-flex items-center gap-1.5 bg-yellow border-2 border-black px-3.5 py-1 rounded-full text-xs font-black shadow-neo-sm uppercase tracking-wide">
+                        <i class="fa-solid fa-bolt text-[10px]"></i> Instant Visual Analytics
+                    </div>
 
-                <!-- Dropzone -->
-                <div id="dropzone"
-                    class="group relative border-2 border-dashed border-white/20 rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 p-12 cursor-pointer backdrop-blur-sm">
-                    <input type="file" id="file-input" accept=".json"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="space-y-2">
+                        <h2 class="text-3xl sm:text-4xl font-black text-black tracking-tight font-display">
+                            Upload Data JSON
+                        </h2>
+                        <p class="text-gray-600 text-sm font-medium">
+                            Drop your exported Fotoyu JSON file to generate instant charts, leaderboards & insights.
+                        </p>
+                    </div>
 
-                    <div
-                        class="flex flex-col items-center justify-center space-y-4 pointer-events-none group-hover:scale-105 transition-transform duration-300">
-                        <div
-                            class="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                            <i class="fa-solid fa-cloud-arrow-up text-2xl text-white"></i>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-lg font-medium text-white">Click or drag JSON file here</p>
-                            <p class="text-sm text-gray-500 mt-1">Supports standard JSON format</p>
+                    <!-- Dropzone -->
+                    <div id="dropzone"
+                        class="group relative border-3 border-dashed border-black rounded-2xl bg-[#FFFDF8] hover:bg-amber-50/70 transition-all duration-200 p-10 cursor-pointer shadow-inner">
+                        <input type="file" id="file-input" accept=".json"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+                        <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none group-hover:scale-[1.02] transition-transform duration-200">
+                            <div class="w-16 h-16 rounded-2xl bg-yellow border-2.5 border-black flex items-center justify-center shadow-neo">
+                                <i class="fa-solid fa-cloud-arrow-up text-2xl text-black"></i>
+                            </div>
+                            <div>
+                                <p class="text-base font-black text-black">Click to browse or drop file here</p>
+                                <p class="text-xs text-gray-500 font-semibold mt-1">Supports standard Fotoyu JSON & Sync payloads</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div id="error-message"
-                    class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm flex items-center gap-2 justify-center">
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <span id="error-text">Invalid JSON file.</span>
-                </div>
+                    <!-- Error Alert -->
+                    <div id="error-message"
+                        class="hidden p-3.5 bg-rose-100 border-2 border-black rounded-xl text-rose-950 font-bold text-xs flex items-center gap-2 justify-center shadow-neo-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                        <span id="error-text">Invalid JSON file.</span>
+                    </div>
 
-                <div class="pt-4">
-                    <button id="show-sync-btn" class="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-2 mx-auto px-4 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10">
-                        <i class="fa-solid fa-cloud-arrow-down"></i>
-                        Don't have a file? Sync from API
-                    </button>
+                    <!-- Live Sync Switcher CTA -->
+                    <div class="pt-3 border-t-2 border-black/10">
+                        <button id="show-sync-btn" class="neo-btn bg-sky-200 hover:bg-sky-300 text-black text-xs font-black px-5 py-2.5 rounded-xl border-2 border-black shadow-neo-sm inline-flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            Don't have a file? Fetch Live from Fotoyu API
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- View: Sync API -->
-        <section id="sync-view" class="hidden h-full flex flex-col items-center justify-center p-6 transition-all duration-500 ease-in-out opacity-0 translate-y-4">
-            <div class="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <!-- ===================================================================
+             VIEW 2: API SYNC VIEW
+             =================================================================== -->
+        <section id="sync-view" class="hidden h-full flex flex-col items-center p-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out opacity-0 translate-y-4">
+            <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-5 gap-8 my-auto py-4">
                 
                 <!-- History Side (LHS) -->
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-history text-primary"></i>
-                                Recent Requests
-                            </h3>
-                            <button id="sync-history-clear" class="text-gray-500 hover:text-red-400 transition-colors text-xs flex items-center gap-1 p-1" title="Clear All History">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-white border-2.5 border-black rounded-2xl p-6 shadow-neo space-y-4">
+                        <div class="flex justify-between items-center border-b-2 border-black/10 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-purple-200 border-2 border-black rounded-lg flex items-center justify-center text-xs text-black font-black shadow-neo-sm">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <h3 class="text-lg font-black text-black">Recent Requests</h3>
+                            </div>
+                            <button id="sync-history-clear" class="w-8 h-8 bg-white hover:bg-rose-200 border-2 border-black rounded-lg flex items-center justify-center text-xs text-black transition-all shadow-neo-sm" title="Clear All History">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
-                        <p class="text-sm text-gray-400">Recall your previous sync parameters.</p>
-                    </div>
-                    
-                    <div id="sync-history-list" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                        <!-- History items injected here -->
-                        <div class="text-center py-8 text-gray-500 border border-white/5 border-dashed rounded-xl">
-                            No history found.
+                        <p class="text-xs text-gray-600 font-medium">Click any previous request to restore parameters.</p>
+                        
+                        <div id="sync-history-list" class="space-y-3 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                            <!-- Injected by JS -->
+                            <div class="text-center py-8 text-gray-500 border-2 border-dashed border-black/20 rounded-xl bg-neutral-50 font-bold text-xs">
+                                No history found.
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Form Side (RHS) -->
-                <div class="lg:col-span-3 bg-dark-light/50 backdrop-blur-md border border-white/10 rounded-2xl p-8 space-y-6 shadow-2xl">
-                    <div class="space-y-1">
-                        <h3 class="text-2xl font-bold text-white">API Sync Configuration</h3>
-                        <p class="text-sm text-gray-400">Fetch paginated data directly from Fotoyu API.</p>
+                <div class="lg:col-span-3 bg-white border-3 border-black rounded-2xl p-6 sm:p-8 space-y-6 shadow-neo-lg">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between border-b-2 border-black/10 pb-4">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 bg-yellow border-2 border-black rounded-md text-[10px] font-black uppercase shadow-neo-sm mb-1.5">Live Data Ingestion</span>
+                            <h3 class="text-2xl font-black text-black tracking-tight font-display">API Sync Configuration</h3>
+                            <p class="text-xs text-gray-600 font-medium mt-0.5">Fetch paginated items directly from Fotoyu API.</p>
+                        </div>
+                        <div class="w-12 h-12 bg-sky-200 border-2.5 border-black rounded-2xl flex items-center justify-center text-black text-xl shadow-neo">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </div>
                     </div>
 
                     <!-- API Source Switcher -->
-                    <div class="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-full">
-                        <button id="sync-source-tree" type="button" class="flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none">
+                    <div class="flex items-center gap-2 bg-[#F8F6F0] border-2 border-black rounded-xl p-1.5 w-full shadow-neo-sm">
+                        <button id="sync-source-tree" type="button" class="flex-1 text-center py-2 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none shadow-neo-sm">
                             <i class="fa-solid fa-tree"></i>
                             <span>Tree API</span>
                         </button>
-                        <button id="sync-source-member" type="button" class="flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none">
+                        <button id="sync-source-member" type="button" class="flex-1 text-center py-2 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none">
                             <i class="fa-solid fa-user"></i>
                             <span>Member API</span>
                         </button>
                     </div>
 
+                    <!-- Form Inputs -->
                     <div class="space-y-4">
-                        <div class="space-y-2">
-                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Request Name</label>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-black text-black uppercase tracking-wider block">Request Name</label>
                             <input type="text" id="sync-name" placeholder="e.g. Daily Sync" 
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                                class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-semibold text-sm shadow-neo-sm focus:shadow-neo focus:outline-none transition-all placeholder:text-gray-400">
                         </div>
-                        <div id="sync-tree-id-container" class="space-y-2">
-                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tree ID</label>
+                        <div id="sync-tree-id-container" class="space-y-1.5">
+                            <label class="text-xs font-black text-black uppercase tracking-wider block">Tree ID</label>
                             <input type="text" id="sync-tree-id" placeholder="Enter Tree ID..." 
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                                class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-semibold text-sm shadow-neo-sm focus:shadow-neo focus:outline-none transition-all placeholder:text-gray-400">
                         </div>
-                        <div id="sync-member-id-container" class="space-y-2">
-                            <label id="sync-member-id-label" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Member ID (Optional)</label>
+                        <div id="sync-member-id-container" class="space-y-1.5">
+                            <label id="sync-member-id-label" class="text-xs font-black text-black uppercase tracking-wider block">Member ID (Optional)</label>
                             <input type="text" id="sync-member-id" placeholder="Enter Member ID..." 
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                                class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-semibold text-sm shadow-neo-sm focus:shadow-neo focus:outline-none transition-all placeholder:text-gray-400">
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 <div class="flex justify-between items-center">
-                                    <label id="sync-pages-label" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Page Count</label>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-[9px] text-gray-500 font-bold uppercase">Pages</span>
-                                        <button id="sync-mode-toggle" class="relative w-8 h-4 bg-white/10 rounded-full transition-colors focus:outline-none group">
-                                            <div id="sync-mode-knob" class="absolute top-[2px] left-[2px] w-3 h-3 bg-gray-500 rounded-full transition-all duration-300"></div>
+                                    <label id="sync-pages-label" class="text-xs font-black text-black uppercase tracking-wider">Page Count</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[9px] text-gray-600 font-black uppercase">Pages</span>
+                                        <button id="sync-mode-toggle" type="button" class="relative w-8 h-4.5 bg-neutral-200 border-1.5 border-black rounded-full transition-colors focus:outline-none">
+                                            <div id="sync-mode-knob" class="absolute top-[1px] left-[2px] w-3 h-3 bg-black rounded-full transition-all duration-200"></div>
                                         </button>
-                                        <span class="text-[9px] text-gray-500 font-bold uppercase">Raw</span>
+                                        <span class="text-[9px] text-gray-600 font-black uppercase">Raw</span>
                                     </div>
                                 </div>
                                 <input type="number" id="sync-pages" value="1" min="1"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                                    class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-black text-sm shadow-neo-sm focus:shadow-neo focus:outline-none transition-all">
                             </div>
-                            <div class="space-y-2">
-                                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Bearer Token</label>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-black text-black uppercase tracking-wider block">Bearer Token</label>
                                 <input type="password" id="sync-token" placeholder="Optional..." 
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                                    class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-semibold text-sm shadow-neo-sm focus:shadow-neo focus:outline-none transition-all placeholder:text-gray-400">
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl mt-2">
-                            <div class="space-y-0.5">
-                                <label class="text-sm font-semibold text-white flex items-center gap-2">
-                                    <i class="fa-solid fa-file-arrow-down text-primary"></i>
-                                    Auto-Download JSON
-                                </label>
-                                <p class="text-xs text-gray-400">Save data & request params to a JSON file</p>
+                        <!-- Options Row (Auto-Download + Parallel Sync) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                            <!-- Auto-Download JSON -->
+                            <div class="flex items-center justify-between p-3.5 bg-emerald-50 border-2 border-black rounded-xl shadow-neo-sm">
+                                <div class="space-y-0.5">
+                                    <label class="text-xs font-black text-black flex items-center gap-1.5">
+                                        <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
+                                        Auto-Download
+                                    </label>
+                                    <p class="text-[11px] text-gray-600 font-medium">Save JSON file after sync</p>
+                                </div>
+                                <button id="sync-download-toggle" type="button" class="relative w-10 h-6 bg-emerald-200 border-2 border-black rounded-full transition-colors focus:outline-none">
+                                    <div id="sync-download-knob" class="absolute top-[2px] left-[calc(100%-18px)] w-4 h-4 bg-black rounded-full transition-all duration-200"></div>
+                                </button>
                             </div>
-                            <button id="sync-download-toggle" type="button" class="relative w-10 h-6 bg-primary/20 rounded-full transition-colors focus:outline-none group">
-                                <div id="sync-download-knob" class="absolute top-[3px] left-[calc(100%-19px)] w-4 h-4 bg-primary rounded-full transition-all duration-300"></div>
-                            </button>
+
+                            <!-- Parallel Sync -->
+                            <div class="flex items-center justify-between p-3.5 bg-amber-50 border-2 border-black rounded-xl shadow-neo-sm">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-xs font-black text-black flex items-center gap-1">
+                                            <i class="fa-solid fa-bolt text-amber-500"></i>
+                                            Parallel Sync
+                                        </label>
+                                        <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-yellow border border-black">Turbo</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-600 font-medium">Concurrent threads</p>
+                                </div>
+                                <div>
+                                    <select id="sync-concurrency" class="bg-white border-2 border-black rounded-lg px-2.5 py-1 text-xs text-black font-black focus:outline-none cursor-pointer shadow-neo-sm">
+                                        <option value="1">1x (Seq)</option>
+                                        <option value="3">3x Parallel</option>
+                                        <option value="5" selected>5x Parallel</option>
+                                        <option value="8">8x Parallel</option>
+                                        <option value="12">12x Parallel</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <button id="sync-submit-btn" class="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-3 mt-4">
-                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <!-- Main Start Button -->
+                        <button id="sync-submit-btn" class="neo-btn w-full bg-yellow hover:bg-yellow-400 text-black font-black text-base py-3.5 rounded-xl border-2.5 border-black shadow-neo hover:shadow-neo-lg transition-all flex items-center justify-center gap-2.5 mt-2">
+                            <i class="fa-solid fa-cloud-arrow-down text-lg"></i>
                             <span>Start Synchronizing</span>
                         </button>
                     </div>
 
                     <!-- Progress Indicator -->
-                    <div id="sync-progress-container" class="hidden space-y-4 pt-4 border-t border-white/5">
-                        <div class="flex justify-between items-center text-sm">
-                            <span id="sync-status" class="text-gray-300">Preparing...</span>
-                            <span id="sync-percentage" class="text-primary font-bold">0%</span>
+                    <div id="sync-progress-container" class="hidden space-y-3 pt-4 border-t-2 border-black/10">
+                        <div class="flex justify-between items-center text-xs font-black text-black">
+                            <span id="sync-status">Preparing...</span>
+                            <span id="sync-percentage" class="bg-black text-white px-2 py-0.5 rounded font-black">0%</span>
                         </div>
-                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                            <div id="sync-progress-bar" class="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 w-0"></div>
+                        <div class="w-full h-3.5 bg-neutral-100 border-2 border-black rounded-full overflow-hidden p-0.5">
+                            <div id="sync-progress-bar" class="h-full bg-green border-r-2 border-black rounded-full transition-all duration-200 w-0"></div>
                         </div>
-                        <p id="sync-count" class="text-xs text-center text-gray-500 italic">No data fetched yet.</p>
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-600">
+                            <p id="sync-count" class="italic">No data fetched yet.</p>
+                            <button id="sync-cancel-btn" type="button" class="hidden text-rose-700 bg-rose-100 hover:bg-rose-200 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-black shadow-neo-sm transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-stop text-[10px]"></i> Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- View: Dashboard -->
+        <!-- ===================================================================
+             VIEW 3: DASHBOARD VIEW
+             =================================================================== -->
         <section id="dashboard-view"
-            class="hidden h-full flex flex-col transition-all duration-500 ease-in-out opacity-0 translate-y-4 overflow-y-auto custom-scrollbar">
-            <div class="container mx-auto px-6 py-8 space-y-8">
+            class="hidden h-full flex flex-col transition-all duration-300 ease-in-out opacity-0 translate-y-4 overflow-y-auto custom-scrollbar">
+            <div class="container mx-auto px-6 py-8 space-y-8 max-w-7xl">
 
-                <!-- Sync Update Banner (Hidden by default) -->
-                <div id="sync-continue-banner" class="hidden bg-gradient-to-r from-primary/10 via-accent/15 to-primary/5 border border-primary/20 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 backdrop-blur-md shadow-xl animate-pulse-subtle">
+                <!-- Active Sync Banner (Hidden by default) -->
+                <div id="sync-continue-banner" class="hidden bg-yellow border-2.5 border-black p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-neo">
                     <div class="space-y-1 flex-1">
                         <div class="flex items-center gap-2">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                            </span>
-                            <h4 class="font-bold text-white text-lg flex items-center gap-2">
-                                <i class="fa-solid fa-cloud-arrow-down text-primary"></i>
+                            <span class="w-3.5 h-3.5 rounded-full bg-green border-2 border-black inline-block animate-pulse"></span>
+                            <h4 class="font-black text-black text-base flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
                                 Active Sync Connection Detected
                             </h4>
                         </div>
-                        <p class="text-sm text-gray-300">
-                            This dataset has active sync parameters for <span id="sync-banner-name" class="text-primary font-bold">Tree ID</span>.
-                            You can easily continue fetching newer data with a single click.
+                        <p class="text-xs text-black/80 font-semibold">
+                            This dataset has active sync parameters for <span id="sync-banner-name" class="font-black underline">Tree ID</span>.
+                            Continue fetching newer data with a single click.
                         </p>
                     </div>
-                    <button id="sync-continue-btn" class="px-6 py-3.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2 shrink-0 self-stretch md:self-auto justify-center">
+                    <button id="sync-continue-btn" class="neo-btn px-5 py-2.5 bg-black hover:bg-neutral-800 text-white text-xs font-black rounded-xl border-2 border-black shadow-neo-sm flex items-center gap-2 shrink-0">
                         <i class="fa-solid fa-arrows-rotate"></i>
                         <span>Fetch New Data</span>
                     </button>
                 </div>
 
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Stat Card -->
-                    <div
-                        class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
+                <!-- KPI Quick Stats Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Stat Card: Total Posts -->
+                    <div class="bg-sky-100 border-2.5 border-black p-5 rounded-2xl shadow-neo space-y-3 transition-transform hover:-translate-y-1">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-sm text-gray-400 font-medium">Total Posts</p>
-                                <h3 id="stat-total-posts" class="text-3xl font-bold mt-1 text-white">-</h3>
+                                <span class="text-xs text-black uppercase font-black tracking-wider">Total Posts</span>
+                                <h3 id="stat-total-posts" class="text-4xl font-black text-black font-display mt-1">-</h3>
                             </div>
-                            <div class="p-3 bg-blue-500/10 rounded-lg text-blue-400">
+                            <div class="w-10 h-10 bg-sky-300 border-2 border-black rounded-xl flex items-center justify-center text-black font-black shadow-neo-sm">
                                 <i class="fa-solid fa-layer-group"></i>
                             </div>
                         </div>
+                        <div class="text-[11px] font-bold text-sky-950 flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-trend-up"></i> Total publications
+                        </div>
                     </div>
 
-                    <!-- Stat Card -->
-                    <div
-                        class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
+                    <!-- Stat Card: Active Members -->
+                    <div class="bg-emerald-100 border-2.5 border-black p-5 rounded-2xl shadow-neo space-y-3 transition-transform hover:-translate-y-1">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p id="stat-total-members-label" class="text-sm text-gray-400 font-medium">Active Members</p>
-                                <h3 id="stat-total-members" class="text-3xl font-bold mt-1 text-white">-</h3>
+                                <span id="stat-total-members-label" class="text-xs text-black uppercase font-black tracking-wider">Active Members</span>
+                                <h3 id="stat-total-members" class="text-4xl font-black text-black font-display mt-1">-</h3>
                             </div>
-                            <div class="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
+                            <div class="w-10 h-10 bg-emerald-300 border-2 border-black rounded-xl flex items-center justify-center text-black font-black shadow-neo-sm">
                                 <i class="fa-solid fa-users"></i>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Stat Card -->
-                    <div
-                        class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm text-gray-400 font-medium">Total Interactions</p>
-                                <h3 id="stat-total-interactions" class="text-3xl font-bold mt-1 text-white">-</h3>
-                            </div>
-                            <div class="p-3 bg-purple-500/10 rounded-lg text-purple-400">
-                                <i class="fa-solid fa-heart"></i>
-                            </div>
+                        <div class="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
+                            <i class="fa-solid fa-user-check"></i> Unique creators
                         </div>
                     </div>
 
-                    <!-- Stat Card -->
-                    <div
-                        class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
+                    <!-- Stat Card: Total Interactions -->
+                    <div class="bg-rose-100 border-2.5 border-black p-5 rounded-2xl shadow-neo space-y-3 transition-transform hover:-translate-y-1">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-sm text-gray-400 font-medium">Avg Likes/Post</p>
-                                <h3 id="stat-avg-likes" class="text-3xl font-bold mt-1 text-white">-</h3>
+                                <span class="text-xs text-black uppercase font-black tracking-wider">Interactions</span>
+                                <h3 id="stat-total-interactions" class="text-4xl font-black text-black font-display mt-1">-</h3>
                             </div>
-                            <div class="p-3 bg-orange-500/10 rounded-lg text-orange-400">
+                            <div class="w-10 h-10 bg-rose-300 border-2 border-black rounded-xl flex items-center justify-center text-black font-black shadow-neo-sm">
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                        </div>
+                        <div class="text-[11px] font-bold text-rose-950 flex items-center gap-1">
+                            <i class="fa-solid fa-comments"></i> Likes & comments
+                        </div>
+                    </div>
+
+                    <!-- Stat Card: Avg Likes/Post -->
+                    <div class="bg-amber-100 border-2.5 border-black p-5 rounded-2xl shadow-neo space-y-3 transition-transform hover:-translate-y-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs text-black uppercase font-black tracking-wider">Avg Likes / Post</span>
+                                <h3 id="stat-avg-likes" class="text-4xl font-black text-black font-display mt-1">-</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-amber-300 border-2 border-black rounded-xl flex items-center justify-center text-black font-black shadow-neo-sm">
                                 <i class="fa-solid fa-chart-line"></i>
                             </div>
+                        </div>
+                        <div class="text-[11px] font-bold text-amber-950 flex items-center gap-1">
+                            <i class="fa-solid fa-fire"></i> Engagement metric
                         </div>
                     </div>
                 </div>
@@ -354,58 +421,67 @@
                 <!-- Main Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Activity / Timeline (Span 2) -->
-                    <div class="lg:col-span-2 bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
-                        <h3 class="text-lg font-bold text-white mb-6">Activity Over Time</h3>
+                    <div class="lg:col-span-2 bg-white border-2.5 border-black p-6 rounded-2xl shadow-neo">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-black text-black font-display">Activity Over Time</h3>
+                                <p class="text-xs text-gray-500 font-semibold">Post volume progression across calendar dates</p>
+                            </div>
+                            <span class="text-[11px] font-black bg-yellow border-2 border-black px-2.5 py-0.5 rounded-md shadow-neo-sm">
+                                <i class="fa-solid fa-mouse-pointer text-[9px] mr-1"></i> Click date dot to view
+                            </span>
+                        </div>
                         <div class="relative h-72 w-full">
                             <canvas id="chart-activity"></canvas>
                         </div>
                     </div>
 
                     <!-- Content Distribution (Span 1) -->
-                    <div class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
-                        <h3 class="text-lg font-bold text-white mb-6">Content Distribution</h3>
-                        <div class="relative h-72 w-full flex justify-center">
+                    <div class="bg-white border-2.5 border-black p-6 rounded-2xl shadow-neo">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-black text-black font-display">Content Distribution</h3>
+                            <p class="text-xs text-gray-500 font-semibold">Photos vs videos ratio</p>
+                        </div>
+                        <div class="relative h-72 w-full flex justify-center items-center">
                             <canvas id="chart-content-type"></canvas>
                         </div>
                     </div>
                 </div>
 
                 <!-- Leaderboard Section -->
-                <div
-                    class="bg-dark-light/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden flex flex-col h-[500px]">
-                    <div class="p-6 border-b border-white/5 bg-white/5">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-0">
+                <div class="bg-white border-2.5 border-black rounded-2xl shadow-neo overflow-hidden flex flex-col h-[500px]">
+                    <div class="p-5 border-b-2 border-black bg-neutral-100">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <h3 id="leaderboard-title" class="text-lg font-bold text-white">Top Contributors</h3>
-                                <p id="leaderboard-subtitle" class="text-sm text-gray-400 mt-1">Top performing members</p>
+                                <h3 id="leaderboard-title" class="text-lg font-black text-black font-display">Top Contributors</h3>
+                                <p id="leaderboard-subtitle" class="text-xs text-gray-600 font-semibold">Top ranking members based on activity & engagement</p>
                             </div>
                             <div class="flex gap-2 w-full md:w-auto">
                                 <input type="text" id="leaderboard-search" placeholder="Search user..."
-                                    class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors w-full md:w-48">
+                                    class="bg-white border-2 border-black rounded-lg px-3 py-1.5 text-xs font-bold text-black focus:outline-none focus:shadow-neo-sm transition-all w-full md:w-48 placeholder:text-gray-400">
                                 <select id="leaderboard-sort"
-                                    class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-primary/50 transition-colors cursor-pointer">
-                                    <option value="posts">Posts</option>
-                                    <option value="likes">Likes</option>
-                                    <option value="avg">Avg Likes</option>
+                                    class="bg-white border-2 border-black rounded-lg px-3 py-1.5 text-xs font-black text-black focus:outline-none cursor-pointer shadow-neo-sm">
+                                    <option value="posts">Sort: Posts</option>
+                                    <option value="likes">Sort: Likes</option>
+                                    <option value="avg">Sort: Avg Likes</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     <div class="flex-1 overflow-auto custom-scrollbar p-0">
-                        <table class="w-full text-left text-sm text-gray-400">
-                            <thead
-                                class="bg-dark-light text-gray-200 uppercase font-medium sticky top-0 z-10 shadow-lg">
+                        <table class="w-full text-left text-sm text-black">
+                            <thead class="bg-yellow border-b-2 border-black text-black uppercase font-black text-xs sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur">Rank</th>
-                                    <th id="leaderboard-col-user" class="px-6 py-4 bg-dark-light/95 backdrop-blur">User</th>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Posts</th>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Total Likes</th>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-center">Avg Likes</th>
-                                    <th class="px-6 py-4 bg-dark-light/95 backdrop-blur text-right">Action</th>
+                                    <th class="px-6 py-3.5">Rank</th>
+                                    <th id="leaderboard-col-user" class="px-6 py-3.5">User</th>
+                                    <th class="px-6 py-3.5 text-center">Posts</th>
+                                    <th class="px-6 py-3.5 text-center">Total Likes</th>
+                                    <th class="px-6 py-3.5 text-center">Avg Likes</th>
+                                    <th class="px-6 py-3.5 text-right">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="leaderboard-body" class="divide-y divide-white/5">
-                                <!-- Rows injected by JS -->
+                            <tbody id="leaderboard-body" class="divide-y divide-black/10">
+                                <!-- Injected by JS -->
                             </tbody>
                         </table>
                     </div>
@@ -413,88 +489,93 @@
 
                 <!-- Engagement Chart -->
                 <div class="grid grid-cols-1 gap-6">
-                    <div class="bg-dark-light/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl">
-                        <h3 class="text-lg font-bold text-white mb-6">Engagement Analysis</h3>
+                    <div class="bg-white border-2.5 border-black p-6 rounded-2xl shadow-neo">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-black text-black font-display">Engagement Analysis</h3>
+                            <p class="text-xs text-gray-500 font-semibold">Distribution frequency of post likes</p>
+                        </div>
                         <div class="relative h-64 w-full">
                             <canvas id="chart-engagement"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Data Table -->
-                <div class="bg-dark-light/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden flex flex-col">
-                    <div class="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <!-- Recent Entries Data Table -->
+                <div class="bg-white border-2.5 border-black rounded-2xl shadow-neo overflow-hidden flex flex-col">
+                    <div class="p-5 border-b-2 border-black bg-neutral-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <h3 class="text-lg font-bold text-white">Recent Entries</h3>
-                            <p id="table-stats" class="text-sm text-gray-400 mt-1">Showing <span id="table-stats-count" class="text-white font-medium">0</span> entries</p>
+                            <h3 class="text-lg font-black text-black font-display">Recent Entries Explorer</h3>
+                            <p id="table-stats" class="text-xs text-gray-600 font-semibold mt-0.5">Showing <span id="table-stats-count" class="font-black text-black">0</span> entries</p>
                         </div>
                         <div class="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
                             <!-- Date Filter -->
-                            <select id="table-filter-date" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 transition-colors cursor-pointer w-full sm:w-auto">
+                            <select id="table-filter-date" class="bg-white border-2 border-black rounded-lg px-3 py-1.5 text-xs font-black text-black focus:outline-none cursor-pointer shadow-neo-sm w-full sm:w-auto">
                                 <option value="">All Dates</option>
                             </select>
 
                             <!-- Username Filter -->
-                            <select id="table-filter-username" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 transition-colors cursor-pointer w-full sm:w-auto">
+                            <select id="table-filter-username" class="bg-white border-2 border-black rounded-lg px-3 py-1.5 text-xs font-black text-black focus:outline-none cursor-pointer shadow-neo-sm w-full sm:w-auto">
                                 <option value="">All Users</option>
                             </select>
 
                             <input type="text" id="table-search" placeholder="Search caption or type..."
-                                class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors w-full sm:w-auto flex-1">
+                                class="bg-white border-2 border-black rounded-lg px-3 py-1.5 text-xs font-bold text-black focus:outline-none shadow-neo-sm w-full sm:w-auto flex-1 placeholder:text-gray-400">
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-gray-400">
-                            <thead class="bg-white/5 text-gray-200 uppercase font-medium">
+                        <table class="w-full text-left text-sm text-black">
+                            <thead class="bg-neutral-200 border-b-2 border-black uppercase text-xs font-black text-black">
                                 <tr>
-                                    <th class="px-6 py-4">Date</th>
-                                    <th class="px-6 py-4">User</th>
-                                    <th class="px-6 py-4">Type</th>
-                                    <th class="px-6 py-4 text-center">Likes</th>
-                                    <th class="px-6 py-4 text-center">Comments</th>
-                                    <th class="px-6 py-4 text-right">Action</th>
+                                    <th class="px-6 py-3.5">Date</th>
+                                    <th class="px-6 py-3.5">User</th>
+                                    <th class="px-6 py-3.5">Type</th>
+                                    <th class="px-6 py-3.5 text-center">Likes</th>
+                                    <th class="px-6 py-3.5 text-center">Comments</th>
+                                    <th class="px-6 py-3.5 text-right">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="data-table-body" class="divide-y divide-white/5">
-                                <!-- Table rows -->
+                            <tbody id="data-table-body" class="divide-y divide-black/10">
+                                <!-- Injected by JS -->
                             </tbody>
                         </table>
                     </div>
-                    <!-- Pagination -->
-                    <div class="p-4 border-t border-white/5 flex justify-between items-center" id="pagination-controls">
-                        <!-- Pagination buttons -->
+                    <!-- Pagination Bar -->
+                    <div class="p-4 border-t-2 border-black bg-neutral-50 flex justify-between items-center" id="pagination-controls">
+                        <!-- Pagination buttons injected by JS -->
                     </div>
                 </div>
 
-                <footer class="text-center text-gray-600 text-sm py-4">
-                    Analytics Dashboard &copy; 2026
+                <footer class="text-center text-gray-500 font-bold text-xs py-4">
+                    TreeStats Analytics &bull; Designed in Neobrutalism Style
                 </footer>
 
             </div>
         </section>
 
-        <!-- View: Gallery View -->
-        <section id="gallery-view" class="hidden h-full flex flex-col transition-all duration-500 ease-in-out opacity-0 translate-y-4 overflow-hidden">
-            <div class="container mx-auto px-6 py-4 flex flex-col h-full space-y-4">
+        <!-- ===================================================================
+             VIEW 4: GALLERY VIEW
+             =================================================================== -->
+        <section id="gallery-view" class="hidden h-full flex flex-col transition-all duration-300 ease-in-out opacity-0 translate-y-4 overflow-hidden">
+            <div class="container mx-auto px-6 py-4 flex flex-col h-full space-y-4 max-w-7xl">
                 
                 <!-- Page Title & Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
                     <div>
-                        <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                        <h2 class="text-3xl font-black text-black tracking-tight font-display">
                             Gallery Explorer
                         </h2>
-                        <p class="text-gray-400 text-sm mt-1">Browse, filter, and analyze post media assets.</p>
+                        <p class="text-gray-600 text-xs font-semibold mt-0.5">Browse, filter, and analyze post media assets with full visual cards.</p>
                     </div>
                     
                     <!-- Stats badge inside gallery page -->
-                    <div class="bg-white/5 border border-white/10 rounded-xl px-4 py-1.5 flex items-center gap-4 text-sm text-gray-300">
+                    <div class="bg-white border-2 border-black rounded-xl px-4 py-1.5 flex items-center gap-4 text-xs shadow-neo-sm">
                         <div>
-                            <span class="text-xs text-gray-500 block uppercase font-semibold">Total Items</span>
-                            <span id="gallery-stats-total" class="font-bold text-white">-</span>
+                            <span class="text-[10px] text-gray-500 block uppercase font-black">Total Items</span>
+                            <span id="gallery-stats-total" class="font-black text-black">-</span>
                         </div>
-                        <div class="border-l border-white/10 pl-4">
-                            <span class="text-xs text-gray-500 block uppercase font-semibold">Filtered</span>
-                            <span id="gallery-stats-filtered" class="font-bold text-primary">-</span>
+                        <div class="border-l-2 border-black/15 pl-4">
+                            <span class="text-[10px] text-gray-500 block uppercase font-black">Filtered</span>
+                            <span id="gallery-stats-filtered" class="font-black text-primary">-</span>
                         </div>
                     </div>
                 </div>
@@ -503,67 +584,67 @@
                 <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
                     
                     <!-- Left Sidebar Controls -->
-                    <div class="w-full lg:w-72 shrink-0 flex flex-col gap-4 bg-dark-light/50 backdrop-blur-md border border-white/5 p-5 rounded-2xl h-fit lg:h-full lg:overflow-y-auto custom-scrollbar">
+                    <div class="w-full lg:w-72 shrink-0 flex flex-col gap-4 bg-white border-2.5 border-black p-5 rounded-2xl shadow-neo h-fit lg:h-full lg:overflow-y-auto custom-scrollbar">
                         
                         <!-- Search Box -->
                         <div>
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Search Media</h3>
+                            <h3 class="text-xs font-black text-black uppercase tracking-wider mb-2">Search Media</h3>
                             <div class="relative w-full">
-                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-gray-500 text-sm"></i>
+                                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
                                 <input type="text" id="gallery-search" placeholder="Search captions, tags..." 
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-gray-500">
+                                    class="w-full bg-white border-2 border-black rounded-xl pl-9 pr-3 py-2 text-xs font-bold text-black focus:outline-none shadow-neo-sm placeholder:text-gray-400">
                             </div>
                         </div>
 
                         <!-- Filter by Creator -->
-                        <div class="border-t border-white/5 pt-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Filter by Creator</h3>
-                            <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 w-full">
+                        <div class="border-t-2 border-black/10 pt-3">
+                            <h3 class="text-xs font-black text-black uppercase tracking-wider mb-2">Filter by Creator</h3>
+                            <div class="flex items-center gap-2 bg-white border-2 border-black rounded-xl px-3 py-1.5 text-xs shadow-neo-sm w-full">
                                 <i class="fa-solid fa-user text-gray-500 text-xs"></i>
-                                <select id="gallery-filter-user" class="bg-transparent border-0 outline-none text-gray-300 cursor-pointer w-full text-xs font-semibold focus:ring-0">
-                                    <option value="" class="bg-dark-light">All Creators</option>
+                                <select id="gallery-filter-user" class="bg-transparent border-0 outline-none text-black cursor-pointer w-full text-xs font-bold focus:ring-0">
+                                    <option value="">All Creators</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- Filter by Type -->
-                        <div class="border-t border-white/5 pt-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Content Type</h3>
-                            <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 w-full">
+                        <div class="border-t-2 border-black/10 pt-3">
+                            <h3 class="text-xs font-black text-black uppercase tracking-wider mb-2">Content Type</h3>
+                            <div class="flex items-center gap-2 bg-white border-2 border-black rounded-xl px-3 py-1.5 text-xs shadow-neo-sm w-full">
                                 <i class="fa-solid fa-photo-film text-gray-500 text-xs"></i>
-                                <select id="gallery-filter-type" class="bg-transparent border-0 outline-none text-gray-300 cursor-pointer w-full text-xs font-semibold focus:ring-0">
-                                    <option value="" class="bg-dark-light">All Types</option>
-                                    <option value="photo" class="bg-dark-light">Photos Only</option>
-                                    <option value="video" class="bg-dark-light">Videos Only</option>
+                                <select id="gallery-filter-type" class="bg-transparent border-0 outline-none text-black cursor-pointer w-full text-xs font-bold focus:ring-0">
+                                    <option value="">All Types</option>
+                                    <option value="photo">Photos Only</option>
+                                    <option value="video">Videos Only</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- Sort Order -->
-                        <div class="border-t border-white/5 pt-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sort Order</h3>
-                            <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 w-full">
+                        <div class="border-t-2 border-black/10 pt-3">
+                            <h3 class="text-xs font-black text-black uppercase tracking-wider mb-2">Sort Order</h3>
+                            <div class="flex items-center gap-2 bg-white border-2 border-black rounded-xl px-3 py-1.5 text-xs shadow-neo-sm w-full">
                                 <i class="fa-solid fa-arrow-down-wide-short text-gray-500 text-xs"></i>
-                                <select id="gallery-sort" class="bg-transparent border-0 outline-none text-gray-300 cursor-pointer w-full text-xs font-semibold focus:ring-0">
-                                    <option value="newest" class="bg-dark-light">Newest First</option>
-                                    <option value="oldest" class="bg-dark-light">Oldest First</option>
-                                    <option value="likes" class="bg-dark-light">Most Liked</option>
-                                    <option value="comments" class="bg-dark-light">Most Discussed</option>
+                                <select id="gallery-sort" class="bg-transparent border-0 outline-none text-black cursor-pointer w-full text-xs font-bold focus:ring-0">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="likes">Most Liked</option>
+                                    <option value="comments">Most Discussed</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- Reset / Clear Button -->
-                        <div class="mt-auto pt-3 border-t border-white/5">
-                            <button id="gallery-clear-filters" class="w-full py-2 text-xs font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all flex items-center justify-center gap-1.5">
+                        <div class="mt-auto pt-3 border-t-2 border-black/10">
+                            <button id="gallery-clear-filters" class="neo-btn-sm w-full py-2 text-xs font-black text-black bg-rose-200 hover:bg-rose-300 flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-rotate-right"></i>
                                 Clear Filters
                             </button>
                         </div>
                     </div>
 
-                    <!-- Right Grid Container (Takes remaining space, full height) -->
-                    <div class="flex-1 min-h-0 bg-dark-light/20 border border-white/5 rounded-2xl overflow-hidden relative">
+                    <!-- Right Grid Container -->
+                    <div class="flex-1 min-h-0 bg-white/70 border-2.5 border-black rounded-2xl shadow-neo overflow-hidden relative">
                         <div id="gallery-grid-container" class="h-full overflow-y-auto custom-scrollbar p-6">
                             <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-6">
                                 <!-- Injected by JavaScript -->
@@ -571,11 +652,11 @@
                             
                             <!-- Empty State in Grid -->
                             <div id="gallery-empty-state" class="hidden absolute inset-0 flex flex-col items-center justify-center p-12 text-center pointer-events-none">
-                                <div class="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-gray-500">
-                                    <i class="fa-solid fa-image-portrait text-2xl"></i>
+                                <div class="w-16 h-16 rounded-2xl bg-yellow border-2.5 border-black flex items-center justify-center mb-4 text-black shadow-neo">
+                                    <i class="fa-solid fa-image text-2xl"></i>
                                 </div>
-                                <h3 class="text-lg font-semibold text-white">No media items found</h3>
-                                <p class="text-sm text-gray-500 max-w-xs mt-1">Try adjusting your filters, search queries, or upload another dataset.</p>
+                                <h3 class="text-lg font-black text-black font-display">No media items found</h3>
+                                <p class="text-xs text-gray-600 font-semibold max-w-xs mt-1">Try adjusting your filters, search terms, or upload another dataset.</p>
                             </div>
                         </div>
                     </div>
@@ -586,64 +667,64 @@
         </section>
     </main>
 
-    <!-- Modals Container -->
+    <!-- ===================================================================
+         MODALS CONTAINER
+         =================================================================== -->
     <div id="modal-backdrop"
-        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
 
         <!-- User Profile Modal -->
         <div id="user-profile-modal"
-            class="bg-[#1E293B] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 hidden">
+            class="bg-white border-3 border-black rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-neo-xl transform scale-95 transition-transform duration-200 hidden overflow-hidden">
             <!-- Header -->
-            <div
-                class="p-6 border-b border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5">
+            <div class="p-6 border-b-2.5 border-black flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-sky-100 shrink-0">
                 <div class="flex items-center gap-4">
                     <div id="profile-avatar"
-                        class="w-16 h-16 rounded-full bg-gray-700 overflow-hidden border-2 border-primary shadow-lg">
+                        class="w-16 h-16 rounded-2xl bg-white overflow-hidden border-2.5 border-black shadow-neo-sm shrink-0">
                         <!-- Img injected -->
                     </div>
                     <div>
-                        <h2 id="profile-username" class="text-2xl font-bold text-white">Username</h2>
-                        <div class="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                        <h2 id="profile-username" class="text-2xl font-black text-black font-display">Username</h2>
+                        <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-black mt-1">
                             <span id="profile-status"
-                                class="px-2 py-0.5 rounded bg-white/10 text-xs border border-white/5">Verified</span>
-                            <span><i class="fa-solid fa-layer-group text-primary mr-1"></i> <span
+                                class="px-2 py-0.5 rounded-md bg-yellow border-1.5 border-black text-[10px] uppercase font-black shadow-neo-sm">Verified</span>
+                            <span class="bg-white border-1.5 border-black px-2 py-0.5 rounded-md shadow-neo-sm"><i class="fa-solid fa-layer-group text-primary mr-1"></i> <span
                                     id="profile-total-posts">0</span> Posts</span>
-                            <span><i class="fa-solid fa-heart text-red-500 mr-1"></i> <span
+                            <span class="bg-white border-1.5 border-black px-2 py-0.5 rounded-md shadow-neo-sm"><i class="fa-solid fa-heart text-rose-500 mr-1"></i> <span
                                     id="profile-total-likes">0</span> Likes</span>
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-3">
+                <div class="flex gap-2">
                     <a id="profile-external-link" href="#" target="_blank"
-                        class="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                        class="neo-btn-sm px-4 py-2 bg-yellow hover:bg-yellow-400 text-black text-xs font-black rounded-xl border-2 border-black shadow-neo-sm flex items-center gap-1.5">
                         <span>Fotoyu Profile</span>
-                        <i class="fa-solid fa-external-link-alt"></i>
+                        <i class="fa-solid fa-external-link-alt text-[10px]"></i>
                     </a>
-                    <button
-                        class="close-modal-btn w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-                        <i class="fa-solid fa-xmark text-lg"></i>
+                    <button class="close-modal-btn w-9 h-9 flex items-center justify-center rounded-xl bg-white hover:bg-rose-200 border-2 border-black text-black transition-all shadow-neo-sm">
+                        <i class="fa-solid fa-xmark text-base"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Content -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
                 <!-- Activity Graph Collapsible -->
-                <div class="mb-6 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                    <button id="profile-chart-toggle" class="w-full flex justify-between items-center p-4 hover:bg-white/5 transition-colors focus:outline-none">
-                        <span class="font-bold text-white"><i class="fa-solid fa-chart-line mr-2 text-primary"></i> Activity Graph</span>
-                        <i id="profile-chart-icon" class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                <div class="bg-[#F8F6F0] border-2 border-black rounded-xl overflow-hidden shadow-neo-sm">
+                    <button id="profile-chart-toggle" class="w-full flex justify-between items-center p-4 hover:bg-neutral-100 transition-colors focus:outline-none">
+                        <span class="font-black text-black text-sm"><i class="fa-solid fa-chart-line mr-2 text-primary"></i> Activity Graph</span>
+                        <i id="profile-chart-icon" class="fa-solid fa-chevron-down text-black transition-transform duration-200"></i>
                     </button>
-                    <div id="profile-chart-container" class="hidden p-4 border-t border-white/10">
+                    <div id="profile-chart-container" class="hidden p-4 border-t-2 border-black bg-white">
                         <div class="relative h-48 w-full">
                             <canvas id="profile-chart-activity"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-lg font-bold text-white truncate">Gallery<span id="profile-gallery-filter-text" class="text-sm font-normal text-gray-400 ml-2"></span></h4>
-                    <button id="profile-gallery-clear-filter" class="hidden text-sm px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors border border-white/10 whitespace-nowrap ml-4">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-lg font-black text-black truncate font-display">Gallery<span id="profile-gallery-filter-text" class="text-xs font-bold text-gray-500 ml-2"></span></h4>
+                    <button id="profile-gallery-clear-filter" class="hidden text-xs font-black px-3 py-1 bg-rose-200 hover:bg-rose-300 rounded-lg text-black transition-colors border-2 border-black shadow-neo-sm">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Clear Filter
                     </button>
                 </div>
@@ -655,11 +736,11 @@
 
         <!-- Post Detail Modal -->
         <div id="post-detail-modal"
-            class="bg-[#1E293B] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 hidden overflow-hidden">
+            class="bg-white border-3 border-black rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-neo-xl transform scale-95 transition-transform duration-200 hidden overflow-hidden">
             <!-- Header -->
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
-                <h3 class="text-lg font-bold text-white">Post Details</h3>
-                <button class="close-modal-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <div class="p-4 border-b-2.5 border-black flex justify-between items-center bg-neutral-100 shrink-0">
+                <h3 class="text-base font-black text-black font-display">Post Details</h3>
+                <button class="close-modal-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white hover:bg-rose-200 border-2 border-black text-black transition-all shadow-neo-sm">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -667,54 +748,58 @@
             <!-- Content -->
             <div class="flex flex-col md:flex-row flex-1 overflow-y-auto custom-scrollbar">
                 <!-- Image Side -->
-                <div class="w-full md:w-3/5 bg-black/50 flex items-center justify-center min-h-[300px] p-4 relative">
-                    <img id="post-detail-image" src="" class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg">
-                    <div id="post-detail-video-icon" class="hidden absolute top-4 right-4 text-white drop-shadow-lg text-2xl">
-                        <i class="fa-solid fa-video"></i>
+                <div class="w-full md:w-3/5 bg-neutral-900 flex items-center justify-center min-h-[300px] p-4 relative border-b-2 md:border-b-0 md:border-r-2 border-black">
+                    <img id="post-detail-image" src="" class="max-w-full max-h-[70vh] object-contain rounded-xl border-2 border-black shadow-neo">
+                    <div id="post-detail-video-icon" class="hidden absolute top-4 right-4 bg-black text-white px-2 py-1 rounded-md text-xs font-black border border-white">
+                        <i class="fa-solid fa-video mr-1"></i> Video
                     </div>
                 </div>
                 
                 <!-- Details Side -->
-                <div class="w-full md:w-2/5 p-6 flex flex-col gap-6 bg-[#1E293B]">
+                <div class="w-full md:w-2/5 p-6 flex flex-col gap-5 bg-white">
                     <!-- User Info -->
                     <div class="flex items-center gap-3">
-                        <img id="post-detail-avatar" src="" class="w-12 h-12 rounded-full border border-white/10 object-cover">
+                        <img id="post-detail-avatar" src="" class="w-12 h-12 rounded-xl border-2 border-black object-cover shadow-neo-sm">
                         <div>
-                            <h4 id="post-detail-username" class="text-white font-bold text-lg">Username</h4>
-                            <p id="post-detail-date" class="text-xs text-gray-400">Date</p>
+                            <h4 id="post-detail-username" class="text-black font-black text-base font-display">Username</h4>
+                            <p id="post-detail-date" class="text-xs text-gray-500 font-semibold">Date</p>
                         </div>
                     </div>
 
                     <!-- Stats Row -->
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-white/5 p-3 rounded-lg border border-white/5 flex items-center gap-3">
-                            <i class="fa-solid fa-heart text-red-500 text-lg"></i>
+                        <div class="bg-rose-50 p-3 rounded-xl border-2 border-black flex items-center gap-3 shadow-neo-sm">
+                            <div class="w-8 h-8 rounded-lg bg-rose-200 border-1.5 border-black flex items-center justify-center">
+                                <i class="fa-solid fa-heart text-rose-600 text-sm"></i>
+                            </div>
                             <div>
-                                <p class="text-xs text-gray-400">Likes</p>
-                                <p id="post-detail-likes" class="text-white font-bold">0</p>
+                                <p class="text-[10px] text-black font-bold uppercase">Likes</p>
+                                <p id="post-detail-likes" class="text-black font-black text-lg">0</p>
                             </div>
                         </div>
-                        <div class="bg-white/5 p-3 rounded-lg border border-white/5 flex items-center gap-3">
-                            <i class="fa-solid fa-comment text-blue-400 text-lg"></i>
+                        <div class="bg-sky-50 p-3 rounded-xl border-2 border-black flex items-center gap-3 shadow-neo-sm">
+                            <div class="w-8 h-8 rounded-lg bg-sky-200 border-1.5 border-black flex items-center justify-center">
+                                <i class="fa-solid fa-comment text-sky-600 text-sm"></i>
+                            </div>
                             <div>
-                                <p class="text-xs text-gray-400">Comments</p>
-                                <p id="post-detail-comments" class="text-white font-bold">0</p>
+                                <p class="text-[10px] text-black font-bold uppercase">Comments</p>
+                                <p id="post-detail-comments" class="text-black font-black text-lg">0</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Caption -->
                     <div class="flex-1">
-                        <h5 class="text-sm font-bold text-gray-300 mb-2">Caption</h5>
-                        <div id="post-detail-caption" class="text-sm text-gray-400 bg-white/5 p-3 rounded-lg border border-white/5 min-h-[100px] max-h-[200px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                        <h5 class="text-xs font-black text-black uppercase tracking-wider mb-1.5">Caption</h5>
+                        <div id="post-detail-caption" class="text-xs text-gray-800 bg-[#F8F6F0] p-3 rounded-xl border-2 border-black min-h-[90px] max-h-[180px] overflow-y-auto custom-scrollbar whitespace-pre-wrap font-medium">
                             No caption provided.
                         </div>
                     </div>
 
                     <!-- Action Link -->
-                    <div class="mt-4 shrink-0">
-                        <a id="post-detail-link" href="#" target="_blank" class="w-full py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                            <span>Open on Web</span>
+                    <div class="mt-2 shrink-0">
+                        <a id="post-detail-link" href="#" target="_blank" class="neo-btn w-full py-3 bg-yellow hover:bg-yellow-400 text-black text-xs font-black rounded-xl border-2 border-black shadow-neo flex items-center justify-center gap-2">
+                            <span>Open on Fotoyu Web</span>
                             <i class="fa-solid fa-external-link-alt"></i>
                         </a>
                     </div>
@@ -724,65 +809,65 @@
 
         <!-- Continue Sync Modal -->
         <div id="continue-sync-modal"
-            class="bg-[#1E293B] border border-white/10 rounded-2xl w-full max-w-md p-6 flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 hidden gap-6">
+            class="bg-white border-3 border-black rounded-2xl w-full max-w-md p-6 flex flex-col shadow-neo-xl transform scale-95 transition-transform duration-200 hidden gap-5">
             <!-- Header -->
-            <div class="flex justify-between items-center border-b border-white/5 pb-4">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+            <div class="flex justify-between items-center border-b-2 border-black/10 pb-3">
+                <h3 class="text-lg font-black text-black flex items-center gap-2 font-display">
                     <i class="fa-solid fa-arrows-rotate text-primary"></i>
                     Fetch New Data
                 </h3>
-                <button class="close-modal-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                <button class="close-modal-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white hover:bg-rose-200 border-2 border-black text-black transition-all shadow-neo-sm">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             
             <!-- Body -->
             <div class="space-y-4">
-                <div class="p-4 bg-white/5 border border-white/5 rounded-xl text-sm text-gray-300 space-y-2">
+                <div class="p-4 bg-amber-50 border-2 border-black rounded-xl text-xs text-black space-y-2 shadow-neo-sm font-semibold">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Tree/Member ID:</span>
-                        <span id="cont-sync-tree-id" class="font-mono text-white font-semibold"></span>
+                        <span class="text-gray-600">Tree/Member ID:</span>
+                        <span id="cont-sync-tree-id" class="font-mono text-black font-black"></span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Request Name:</span>
-                        <span id="cont-sync-name" class="text-white font-semibold"></span>
+                        <span class="text-gray-600">Request Name:</span>
+                        <span id="cont-sync-name" class="text-black font-black"></span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Existing Items:</span>
-                        <span id="cont-sync-existing" class="text-primary font-bold"></span>
+                        <span class="text-gray-600">Existing Items:</span>
+                        <span id="cont-sync-existing" class="text-primary font-black"></span>
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">How many pages to loop?</label>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-black text-black uppercase tracking-wider block">How many pages to loop?</label>
                     <input type="number" id="cont-sync-loop-pages" value="5" min="1" max="50"
-                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
-                    <p class="text-[11px] text-gray-500">We will call pages 1 to N, stopping immediately if any leaf ID matches your existing local dataset (ensuring zero duplication).</p>
+                        class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-black text-sm shadow-neo-sm focus:outline-none">
+                    <p class="text-[11px] text-gray-500 font-medium">Calls pages 1 to N, stopping immediately if any leaf ID matches your local dataset.</p>
                 </div>
             </div>
 
-            <!-- Progress / Status Indicator inside modal when active -->
-            <div id="cont-sync-progress" class="hidden space-y-3 pt-2 border-t border-white/5">
-                <div class="flex justify-between items-center text-xs">
-                    <span id="cont-sync-status" class="text-gray-300">Preparing...</span>
-                    <span id="cont-sync-percent" class="text-primary font-bold">0%</span>
+            <!-- Progress Indicator inside modal -->
+            <div id="cont-sync-progress" class="hidden space-y-2 pt-2 border-t-2 border-black/10">
+                <div class="flex justify-between items-center text-xs font-black text-black">
+                    <span id="cont-sync-status">Preparing...</span>
+                    <span id="cont-sync-percent" class="bg-black text-white px-1.5 py-0.5 rounded text-[10px]">0%</span>
                 </div>
-                <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div id="cont-sync-progress-bar" class="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300 w-0"></div>
+                <div class="w-full h-3 bg-neutral-100 border-2 border-black rounded-full overflow-hidden p-0.5">
+                    <div id="cont-sync-progress-bar" class="h-full bg-green border-r-2 border-black rounded-full transition-all duration-200 w-0"></div>
                 </div>
-                <div class="flex justify-between text-[10px] text-gray-500 italic">
+                <div class="flex justify-between text-[10px] text-gray-600 font-bold">
                     <span id="cont-sync-stats-added">Added: 0 items</span>
                     <span id="cont-sync-stats-status">Running...</span>
                 </div>
             </div>
 
-            <!-- Footer / Action Buttons -->
-            <div id="cont-sync-footer" class="flex gap-3 justify-end pt-2 border-t border-white/5">
-                <button type="button" class="close-modal-btn px-4 py-2 text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all font-semibold">
+            <!-- Footer Action Buttons -->
+            <div id="cont-sync-footer" class="flex gap-2 justify-end pt-3 border-t-2 border-black/10">
+                <button type="button" class="close-modal-btn px-4 py-2 text-xs font-black text-black bg-white hover:bg-neutral-100 border-2 border-black rounded-xl shadow-neo-sm">
                     Cancel
                 </button>
-                <button id="cont-sync-submit" class="px-5 py-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
-                    <i class="fa-solid fa-play"></i>
+                <button id="cont-sync-submit" class="neo-btn px-5 py-2 bg-yellow hover:bg-yellow-400 text-black text-xs font-black rounded-xl border-2 border-black shadow-neo-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-play text-[10px]"></i>
                     <span>Start Fetch</span>
                 </button>
             </div>
@@ -790,17 +875,15 @@
 
         <!-- Daily Posts Modal -->
         <div id="daily-posts-modal"
-            class="bg-[#1E293B] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 hidden">
+            class="bg-white border-3 border-black rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-neo-xl transform scale-95 transition-transform duration-200 hidden overflow-hidden">
             <!-- Header -->
-            <div
-                class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+            <div class="p-6 border-b-2.5 border-black flex justify-between items-center bg-purple-100 shrink-0">
                 <div>
-                    <h2 id="daily-posts-title" class="text-2xl font-bold text-white">Posts from Date</h2>
-                    <p id="daily-posts-subtitle" class="text-sm text-gray-400 mt-1">Total items: 0</p>
+                    <h2 id="daily-posts-title" class="text-2xl font-black text-black font-display">Posts from Date</h2>
+                    <p id="daily-posts-subtitle" class="text-xs text-gray-700 font-bold mt-0.5">Total items: 0</p>
                 </div>
-                <button
-                    class="close-modal-btn w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button class="close-modal-btn w-9 h-9 flex items-center justify-center rounded-xl bg-white hover:bg-rose-200 border-2 border-black text-black transition-all shadow-neo-sm">
+                    <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
 

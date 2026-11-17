@@ -52,6 +52,8 @@ const UI = {
         syncStatus: document.getElementById('sync-status'),
         syncPercentage: document.getElementById('sync-percentage'),
         syncCount: document.getElementById('sync-count'),
+        syncCancelBtn: document.getElementById('sync-cancel-btn'),
+        syncConcurrency: document.getElementById('sync-concurrency'),
         syncHistoryList: document.getElementById('sync-history-list'),
         syncHistoryClear: document.getElementById('sync-history-clear'),
 
@@ -141,9 +143,10 @@ const UI = {
     },
 
     init() {
-        // Chart defaults
-        Chart.defaults.color = '#94a3b8';
-        Chart.defaults.font.family = 'Inter';
+        // Chart defaults for Neobrutalism
+        Chart.defaults.color = '#000000';
+        Chart.defaults.font.family = '"Plus Jakarta Sans", "Inter", sans-serif';
+        Chart.defaults.font.weight = 'bold';
 
         this.initModals();
         this.initViewSwitching();
@@ -168,24 +171,18 @@ const UI = {
                 }
             });
 
-            // Update Nav
+            // Update Nav with Neobrutalism active styling
             if (target === this.elements.uploadView) {
-                navUpload.classList.add('text-primary');
-                navUpload.classList.remove('text-gray-400');
-                navSync.classList.add('text-gray-400');
-                navSync.classList.remove('text-white');
+                navUpload.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-black text-black bg-yellow hover:bg-yellow-400 flex items-center gap-1.5 shadow-neo-sm";
+                navSync.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
                 this.updateTabStyles('none');
             } else if (target === this.elements.syncView) {
-                navSync.classList.add('text-white');
-                navSync.classList.remove('text-gray-400');
-                navUpload.classList.remove('text-primary');
-                navUpload.classList.add('text-gray-400');
+                navSync.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-black text-black bg-sky-200 hover:bg-sky-300 flex items-center gap-1.5 shadow-neo-sm";
+                navUpload.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
                 this.updateTabStyles('none');
             } else {
-                navUpload.classList.remove('text-primary');
-                navUpload.classList.add('text-gray-400');
-                navSync.classList.add('text-gray-400');
-                navSync.classList.remove('text-white');
+                navUpload.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
+                navSync.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
 
                 if (target === this.elements.dashboardView) {
                     this.updateTabStyles('dashboard');
@@ -272,6 +269,17 @@ const UI = {
             });
         }
 
+        // Cancel Sync Click Handler
+        if (this.elements.syncCancelBtn) {
+            this.elements.syncCancelBtn.addEventListener('click', () => {
+                if (this.syncAbortController) {
+                    this.syncAbortController.abort();
+                    this.elements.syncStatus.textContent = "Cancelling sync...";
+                    this.elements.syncCancelBtn.disabled = true;
+                }
+            });
+        }
+
         // Auto-fill from last session if available
         const lastSync = this.getCookie('last_sync');
         if (lastSync) {
@@ -292,6 +300,9 @@ const UI = {
                 if (data.sync_source !== undefined) {
                     this.syncSource = data.sync_source;
                 }
+                if (data.concurrency !== undefined && this.elements.syncConcurrency) {
+                    this.elements.syncConcurrency.value = data.concurrency;
+                }
             } catch (e) { }
         }
         this.updateSyncSourceUI();
@@ -306,13 +317,13 @@ const UI = {
         if (!treeBtn || !memberBtn) return;
 
         if (this.syncSource === 'member') {
-            treeBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
-            memberBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            treeBtn.className = "flex-1 text-center py-2 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            memberBtn.className = "flex-1 text-center py-2 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none shadow-neo-sm";
             if (treeContainer) treeContainer.classList.add('hidden');
             if (memberLabel) memberLabel.textContent = "Member ID (Required)";
         } else {
-            treeBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
-            memberBtn.className = "flex-1 text-center py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
+            treeBtn.className = "flex-1 text-center py-2 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none shadow-neo-sm";
+            memberBtn.className = "flex-1 text-center py-2 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center justify-center gap-1.5 focus:outline-none";
             if (treeContainer) treeContainer.classList.remove('hidden');
             if (memberLabel) memberLabel.textContent = "Member ID (Optional)";
         }
@@ -325,13 +336,9 @@ const UI = {
 
         if (this.syncIsRawMode) {
             knob.style.left = 'calc(100% - 14px)';
-            knob.classList.replace('bg-gray-500', 'bg-primary');
-            toggle.classList.replace('bg-white/10', 'bg-primary/20');
             label.textContent = 'Raw Item Count';
         } else {
             knob.style.left = '2px';
-            knob.classList.replace('bg-primary', 'bg-gray-500');
-            toggle.classList.replace('bg-primary/20', 'bg-white/10');
             label.textContent = 'Page Count';
         }
     },
@@ -342,13 +349,13 @@ const UI = {
         if (!knob || !toggle) return;
 
         if (this.syncDownloadJson) {
-            knob.style.left = 'calc(100% - 19px)';
-            knob.classList.replace('bg-gray-500', 'bg-primary');
-            toggle.classList.replace('bg-white/10', 'bg-primary/20');
+            knob.style.left = 'calc(100% - 18px)';
+            toggle.classList.remove('bg-neutral-200');
+            toggle.classList.add('bg-emerald-200');
         } else {
-            knob.style.left = '3px';
-            knob.classList.replace('bg-primary', 'bg-gray-500');
-            toggle.classList.replace('bg-primary/20', 'bg-white/10');
+            knob.style.left = '2px';
+            toggle.classList.remove('bg-emerald-200');
+            toggle.classList.add('bg-neutral-200');
         }
     },
 
@@ -358,6 +365,7 @@ const UI = {
         const memberId = this.elements.syncMemberId.value.trim();
         const inputVal = parseInt(this.elements.syncPages.value) || 1;
         const token = this.elements.syncToken.value.trim();
+        const concurrencyVal = parseInt(this.elements.syncConcurrency ? this.elements.syncConcurrency.value : 5) || 5;
 
         if (this.syncSource === 'member') {
             if (!memberId) {
@@ -373,59 +381,196 @@ const UI = {
 
         // Calculate actual pages
         const pages = this.syncIsRawMode ? Math.ceil(inputVal / 20) : inputVal;
+        const effectiveConcurrency = Math.max(1, Math.min(concurrencyVal, pages));
 
         // Save to cookies
-        this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode, memberId, this.syncSource);
-        this.setCookie('last_sync', JSON.stringify({ name, tree_id: treeId, member_id: memberId, token, is_raw: this.syncIsRawMode, download_json: this.syncDownloadJson, sync_source: this.syncSource }));
+        this.saveSyncHistory(name, treeId, inputVal, token, this.syncIsRawMode, memberId, this.syncSource, effectiveConcurrency);
+        this.setCookie('last_sync', JSON.stringify({ 
+            name, 
+            tree_id: treeId, 
+            member_id: memberId, 
+            token, 
+            is_raw: this.syncIsRawMode, 
+            download_json: this.syncDownloadJson, 
+            sync_source: this.syncSource, 
+            concurrency: effectiveConcurrency 
+        }));
 
         // UI Reset
         this.elements.syncProgressContainer.classList.remove('hidden');
         this.elements.syncSubmitBtn.disabled = true;
         this.elements.syncSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Syncing...';
 
-        let allResults = [];
-        let stopLoop = false;
+        // Prepare AbortController & cancel button
+        this.syncAbortController = new AbortController();
+        const signal = this.syncAbortController.signal;
+        if (this.elements.syncCancelBtn) {
+            this.elements.syncCancelBtn.classList.remove('hidden');
+            this.elements.syncCancelBtn.disabled = false;
+        }
 
-        for (let i = 1; i <= pages && !stopLoop; i++) {
-            this.updateSyncProgress(i, pages, `Fetching page ${i}...`, allResults.length);
+        const pageResults = new Map();
+        let nextPageIndex = 1;
+        let maxValidPage = pages;
+        let completedPages = 0;
+        let activeWorkers = 0;
+        let isStopped = false;
+        let fatalError = null;
+        const startTime = performance.now();
 
-            try {
-                let url;
-                if (this.syncSource === 'member') {
-                    url = `https://api.fotoyu.com/post/v1/posts?page=${i}&limit=20&member_id=${memberId}`;
-                } else {
-                    url = `https://api.fotoyu.com/tree/v1/leaves?page=${i}&limit=20&tree_id=${treeId}`;
-                    if (memberId) {
-                        url += `&member_id=${memberId}`;
+        const updateProgressUI = () => {
+            const currentTotalItems = Array.from(pageResults.values()).reduce((sum, arr) => sum + (arr ? arr.length : 0), 0);
+            const targetPages = Math.min(pages, maxValidPage);
+            const percent = targetPages > 0 ? Math.min(100, Math.round((completedPages / targetPages) * 100)) : 0;
+
+            this.elements.syncProgressBar.style.width = `${percent}%`;
+            this.elements.syncPercentage.textContent = `${percent}%`;
+
+            if (signal.aborted) {
+                this.elements.syncStatus.textContent = 'Stopping sync...';
+            } else if (effectiveConcurrency > 1) {
+                this.elements.syncStatus.innerHTML = `<span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-400 text-xs animate-pulse"></i> <span>Parallel (${activeWorkers} active threads) &bull; Page ${Math.min(completedPages, targetPages)} / ${targetPages}</span></span>`;
+            } else {
+                this.elements.syncStatus.textContent = `Fetching page ${Math.min(completedPages + 1, targetPages)} of ${targetPages}...`;
+            }
+            this.elements.syncCount.textContent = `Total items collected: ${currentTotalItems}`;
+        };
+
+        const fetchPageWithRetry = async (pageNumber, retries = 2) => {
+            let attempt = 0;
+            while (attempt <= retries) {
+                attempt++;
+                if (signal.aborted || isStopped) return null;
+
+                try {
+                    let url;
+                    if (this.syncSource === 'member') {
+                        url = `https://api.fotoyu.com/post/v1/posts?page=${pageNumber}&limit=20&member_id=${memberId}`;
+                    } else {
+                        url = `https://api.fotoyu.com/tree/v1/leaves?page=${pageNumber}&limit=20&tree_id=${treeId}`;
+                        if (memberId) {
+                            url += `&member_id=${memberId}`;
+                        }
+                    }
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const response = await fetch(url, { headers, signal });
+
+                    if (response.status === 429) {
+                        // Rate limit: backoff and retry
+                        if (attempt <= retries && !signal.aborted) {
+                            await new Promise(r => setTimeout(r, 800 * attempt));
+                            continue;
+                        }
+                        throw new Error(`Rate limit reached (HTTP 429) on page ${pageNumber}`);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} on page ${pageNumber}`);
+                    }
+
+                    const data = await response.json();
+                    return (data && Array.isArray(data.result)) ? data.result : [];
+                } catch (err) {
+                    if (signal.aborted) return null;
+                    if (attempt <= retries) {
+                        await new Promise(r => setTimeout(r, 400 * attempt));
+                    } else {
+                        throw err;
                     }
                 }
-                const headers = {};
-                if (token) headers['Authorization'] = `Bearer ${token}`;
+            }
+            return [];
+        };
 
-                const response = await fetch(url, { headers });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const worker = async (workerId) => {
+            activeWorkers++;
+            try {
+                while (!isStopped && !signal.aborted) {
+                    const page = nextPageIndex++;
+                    if (page > pages || page > maxValidPage) {
+                        break;
+                    }
 
-                const data = await response.json();
-                const results = data.result || [];
+                    try {
+                        const results = await fetchPageWithRetry(page);
+                        if (signal.aborted) break;
 
-                if (results.length === 0) {
-                    stopLoop = true;
-                    this.elements.syncStatus.textContent = "No more data found. Finishing...";
-                } else {
-                    allResults = [...allResults, ...results];
+                        if (!results || results.length === 0) {
+                            maxValidPage = Math.min(maxValidPage, page - 1);
+                            isStopped = true;
+                        } else {
+                            pageResults.set(page, results);
+                            if (results.length < 20) {
+                                maxValidPage = Math.min(maxValidPage, page);
+                            }
+                        }
+                    } catch (err) {
+                        if (signal.aborted) break;
+                        console.error(`Worker ${workerId} failed on page ${page}:`, err);
+                        fatalError = err;
+                        isStopped = true;
+                        break;
+                    } finally {
+                        completedPages++;
+                        updateProgressUI();
+                    }
+
+                    if (effectiveConcurrency === 1) {
+                        await new Promise(r => setTimeout(r, 150));
+                    } else {
+                        await new Promise(r => setTimeout(r, 20));
+                    }
                 }
+            } finally {
+                activeWorkers--;
+                updateProgressUI();
+            }
+        };
 
-                // Small artificial delay for UI feel
-                await new Promise(r => setTimeout(r, 300));
+        // Run concurrent workers
+        const workers = [];
+        for (let i = 0; i < effectiveConcurrency; i++) {
+            workers.push(worker(i + 1));
+        }
 
-            } catch (err) {
-                console.error(err);
-                this.showError(`Error at page ${i}: ${err.message}`);
-                stopLoop = true;
+        await Promise.all(workers);
+
+        if (this.elements.syncCancelBtn) {
+            this.elements.syncCancelBtn.classList.add('hidden');
+        }
+
+        const durationSec = ((performance.now() - startTime) / 1000).toFixed(1);
+
+        // Concatenate collected pages in strict numerical page order
+        let allResults = [];
+        const endPage = Math.min(pages, maxValidPage);
+        for (let p = 1; p <= endPage; p++) {
+            const pageData = pageResults.get(p);
+            if (pageData && pageData.length > 0) {
+                allResults.push(...pageData);
             }
         }
 
-        this.updateSyncProgress(pages, pages, "Complete!", allResults.length);
+        if (this.syncIsRawMode && allResults.length > inputVal) {
+            allResults = allResults.slice(0, inputVal);
+        }
+
+        if (signal.aborted) {
+            this.elements.syncStatus.textContent = `Sync stopped by user. Retrieved ${allResults.length} items.`;
+        } else if (fatalError && allResults.length === 0) {
+            this.showError(`Sync failed: ${fatalError.message}`);
+            this.elements.syncStatus.textContent = `Sync failed on error.`;
+            this.elements.syncSubmitBtn.disabled = false;
+            this.elements.syncSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2"></i> Start Synchronizing';
+            return;
+        } else {
+            this.elements.syncProgressBar.style.width = '100%';
+            this.elements.syncPercentage.textContent = '100%';
+            this.elements.syncStatus.innerHTML = `<span class="text-emerald-700 font-black flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Completed in ${durationSec}s ${effectiveConcurrency > 1 ? `(${effectiveConcurrency} parallel threads)` : ''}</span>`;
+            this.elements.syncCount.textContent = `Total items collected: ${allResults.length}`;
+        }
 
         setTimeout(() => {
             if (allResults.length > 0) {
@@ -443,7 +588,8 @@ const UI = {
                         pages: inputVal,
                         token,
                         is_raw: this.syncIsRawMode,
-                        sync_source: this.syncSource
+                        sync_source: this.syncSource,
+                        concurrency: effectiveConcurrency
                     }
                 };
 
@@ -458,7 +604,7 @@ const UI = {
 
                 const stats = Analytics.process(allResults);
                 this.showDashboard(stats, allResults);
-            } else {
+            } else if (!signal.aborted && !fatalError) {
                 this.showError("No data was fetched.");
             }
 
@@ -476,7 +622,7 @@ const UI = {
         this.elements.syncCount.textContent = `Total items collected: ${count}`;
     },
 
-    saveSyncHistory(name, tree_id, pages, token, is_raw = false, member_id = '', sync_source = 'tree') {
+    saveSyncHistory(name, tree_id, pages, token, is_raw = false, member_id = '', sync_source = 'tree', concurrency = 5) {
         let history = [];
         const existing = this.getCookie('sync_history');
         if (existing) {
@@ -485,7 +631,7 @@ const UI = {
 
         // Remove duplicate and add to top
         history = history.filter(h => h.tree_id !== tree_id || h.name !== name || h.member_id !== member_id || h.sync_source !== sync_source);
-        history.unshift({ name, tree_id, pages, token, is_raw, member_id, sync_source, date: new Date().toISOString() });
+        history.unshift({ name, tree_id, pages, token, is_raw, member_id, sync_source, concurrency, date: new Date().toISOString() });
 
         // Limit to 20
         if (history.length > 20) history = history.slice(0, 20);
@@ -525,7 +671,7 @@ const UI = {
 
         if (history.length === 0) {
             list.innerHTML = `
-                <div class="text-center py-8 text-gray-500 border border-white/5 border-dashed rounded-xl">
+                <div class="text-center py-8 text-gray-500 border-2 border-dashed border-black/20 rounded-xl bg-neutral-50 font-bold text-xs">
                     No history found.
                 </div>`;
             return;
@@ -534,21 +680,27 @@ const UI = {
         list.innerHTML = '';
         history.forEach((h, index) => {
             const date = new Date(h.date).toLocaleDateString();
+            const concurrencyBadge = (h.concurrency && h.concurrency > 1) 
+                ? `<span class="bg-yellow text-black border-1.5 border-black px-1.5 py-0.5 rounded text-[10px] font-black flex items-center gap-1 shadow-neo-sm"><i class="fa-solid fa-bolt text-[8px]"></i>${h.concurrency}x</span>` 
+                : '';
             const item = document.createElement('div');
-            item.className = "bg-white/5 border border-white/5 hover:border-primary/30 rounded-xl p-4 cursor-pointer transition-all group relative";
+            item.className = "bg-[#FAF7F2] border-2 border-black hover:bg-amber-50 rounded-xl p-3.5 cursor-pointer transition-all shadow-neo-sm hover:shadow-neo group relative";
             item.innerHTML = `
                 <div class="flex justify-between items-start mb-1 pr-6">
-                    <h4 class="font-bold text-white group-hover:text-primary transition-colors truncate">${h.name}</h4>
-                    <span class="text-[10px] text-gray-500">${date}</span>
+                    <h4 class="font-black text-black group-hover:text-primary transition-colors truncate text-sm">${h.name}</h4>
+                    <span class="text-[10px] text-gray-500 font-bold">${date}</span>
                 </div>
-                <div class="flex items-center justify-between text-xs text-gray-400">
-                    <span class="truncate max-w-[180px]" title="Source: ${h.sync_source === 'member' ? 'Member' : 'Tree'}${h.sync_source === 'member' ? ` | Member: ${h.member_id}` : ` | Tree: ${h.tree_id}${h.member_id ? ` | Mem: ${h.member_id}` : ''}`}">
+                <div class="flex items-center justify-between text-xs text-gray-700">
+                    <span class="truncate max-w-[150px] font-bold" title="Source: ${h.sync_source === 'member' ? 'Member' : 'Tree'}${h.sync_source === 'member' ? ` | Member: ${h.member_id}` : ` | Tree: ${h.tree_id}${h.member_id ? ` | Mem: ${h.member_id}` : ''}`}">
                         ${h.sync_source === 'member' ? `Mem: ${h.member_id}` : `Tree: ${h.tree_id}${h.member_id ? ` | Mem: ${h.member_id}` : ''}`}
                     </span>
-                    <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px]">${h.is_raw ? 'Raw' : 'Pages'}</span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${concurrencyBadge}
+                        <span class="bg-white border-1.5 border-black text-black px-2 py-0.5 rounded text-[10px] font-black shadow-neo-sm">${h.is_raw ? 'Raw' : 'Pages'}</span>
+                    </div>
                 </div>
-                <button class="delete-history-btn absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1" title="Delete Item">
-                    <i class="fa-solid fa-xmark"></i>
+                <button class="delete-history-btn absolute top-3 right-3 opacity-0 group-hover:opacity-100 bg-white hover:bg-rose-200 border-1.5 border-black text-black transition-all p-1 rounded-md shadow-neo-sm" title="Delete Item">
+                    <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
             `;
 
@@ -561,6 +713,9 @@ const UI = {
                 this.elements.syncToken.value = h.token || '';
                 this.syncIsRawMode = !!h.is_raw;
                 this.syncSource = h.sync_source || 'tree';
+                if (h.concurrency && this.elements.syncConcurrency) {
+                    this.elements.syncConcurrency.value = h.concurrency;
+                }
                 this.updateSyncSourceUI();
                 this.updateSyncModeUI();
             };
@@ -785,10 +940,8 @@ const UI = {
                 this.updateTabStyles('dashboard');
 
                 // Clear nav highlighting
-                this.elements.navUpload.classList.remove('text-primary');
-                this.elements.navUpload.classList.add('text-gray-400');
-                this.elements.navSync.classList.remove('text-white');
-                this.elements.navSync.classList.add('text-gray-400');
+                this.elements.navUpload.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
+                this.elements.navSync.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
             }, 500);
 
             this.renderStats(stats.summary);
@@ -845,10 +998,8 @@ const UI = {
             this.updateTabStyles('none');
 
             // Reset Nav
-            this.elements.navUpload.classList.add('text-primary');
-            this.elements.navUpload.classList.remove('text-gray-400');
-            this.elements.navSync.classList.remove('text-white');
-            this.elements.navSync.classList.add('text-gray-400');
+            this.elements.navUpload.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-black text-black bg-yellow hover:bg-yellow-400 flex items-center gap-1.5 shadow-neo-sm";
+            this.elements.navSync.className = "neo-btn-sm px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-neutral-100 flex items-center gap-1.5";
 
             // Trigger reflow
             void this.elements.uploadView.offsetWidth;
@@ -908,13 +1059,16 @@ const UI = {
                 datasets: [{
                     label: 'New Posts',
                     data: stats.dailyActivity.map(d => d.count),
-                    borderColor: '#3B82F6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#000000',
+                    backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                    borderWidth: 3,
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 3,
-                    pointHoverRadius: 6
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#FACC15',
+                    pointBorderColor: '#000000',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
@@ -922,6 +1076,15 @@ const UI = {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#000000',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#FFFFFF',
+                        borderColor: '#000000',
+                        borderWidth: 2,
+                        cornerRadius: 8,
+                        titleFont: { weight: 'bold' }
+                    },
                     zoom: stats.dailyActivity.length > 15 ? {
                         zoom: {
                             wheel: { enabled: true },
@@ -937,10 +1100,12 @@ const UI = {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        grid: { color: 'rgba(0, 0, 0, 0.08)' },
+                        ticks: { color: '#000000', font: { weight: 'bold' } }
                     },
                     x: {
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: { color: '#000000', font: { weight: 'bold' } }
                     }
                 },
                 onClick: (e, elements) => {
@@ -961,15 +1126,30 @@ const UI = {
                 labels: stats.contentType.map(d => d.type),
                 datasets: [{
                     data: stats.contentType.map(d => d.count),
-                    backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'],
-                    borderWidth: 0
+                    backgroundColor: ['#38BDF8', '#4ADE80', '#FACC15', '#FB7185', '#A78BFA'],
+                    borderColor: '#000000',
+                    borderWidth: 2.5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right' }
+                    legend: { 
+                        position: 'right',
+                        labels: {
+                            color: '#000000',
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#000000',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#FFFFFF',
+                        borderColor: '#000000',
+                        borderWidth: 2,
+                        cornerRadius: 8
+                    }
                 }
             }
         });
@@ -986,8 +1166,10 @@ const UI = {
                 datasets: [{
                     label: 'Posts',
                     data: engagementValues,
-                    backgroundColor: '#8B5CF6',
-                    borderRadius: 4
+                    backgroundColor: '#FACC15',
+                    borderColor: '#000000',
+                    borderWidth: 2,
+                    borderRadius: 6
                 }]
             },
             options: {
@@ -995,14 +1177,24 @@ const UI = {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    title: { display: true, text: 'Likes Distribution' }
+                    title: { display: true, text: 'Likes Distribution', color: '#000000', font: { weight: '900', size: 14 } },
+                    tooltip: {
+                        backgroundColor: '#000000',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#FFFFFF',
+                        borderColor: '#000000',
+                        borderWidth: 2,
+                        cornerRadius: 8
+                    }
                 },
                 scales: {
                     y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        grid: { color: 'rgba(0, 0, 0, 0.08)' },
+                        ticks: { color: '#000000', font: { weight: 'bold' } }
                     },
                     x: {
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: { color: '#000000', font: { weight: 'bold' } }
                     }
                 }
             }
@@ -1047,32 +1239,40 @@ const UI = {
         tbody.innerHTML = '';
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No contributors found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold italic">No contributors found.</td></tr>`;
             return;
         }
 
         users.forEach((user, index) => {
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-white/5 transition-colors cursor-pointer group";
+            tr.className = "hover:bg-amber-50/80 transition-colors cursor-pointer group border-b border-black/10 last:border-0";
             tr.onclick = () => this.showUserDetail(user.username);
 
             const avatarHtml = user.avatar
-                ? `<img src="${user.avatar}" class="w-8 h-8 rounded-full bg-gray-700 object-cover mr-3 inline-block" onerror="this.src=''">`
-                : `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white mr-3 inline-block">${user.username.substring(0, 2).toUpperCase()}</div>`;
+                ? `<img src="${user.avatar}" class="w-8 h-8 rounded-lg border-2 border-black object-cover mr-3 inline-block shadow-neo-sm" onerror="this.src=''">`
+                : `<div class="w-8 h-8 rounded-lg bg-yellow border-2 border-black flex items-center justify-center text-xs font-black text-black mr-3 inline-block shadow-neo-sm">${user.username.substring(0, 2).toUpperCase()}</div>`;
+
+            const rankBadge = index === 0 
+                ? '<span class="bg-yellow border-1.5 border-black px-2 py-0.5 rounded text-[11px] font-black shadow-neo-sm">🥇 #1</span>' 
+                : (index === 1 
+                    ? '<span class="bg-neutral-200 border-1.5 border-black px-2 py-0.5 rounded text-[11px] font-black shadow-neo-sm">🥈 #2</span>' 
+                    : (index === 2 
+                        ? '<span class="bg-amber-200 border-1.5 border-black px-2 py-0.5 rounded text-[11px] font-black shadow-neo-sm">🥉 #3</span>' 
+                        : `<span class="font-bold text-gray-700">#${index + 1}</span>`));
 
             const avgLikes = (user.count > 0 ? (user.likes / user.count) : 0).toFixed(1);
 
             tr.innerHTML = `
-                <td class="px-6 py-4 text-gray-500 font-bold">#${index + 1}</td>
-                <td class="px-6 py-4 text-white font-medium group-hover:text-primary transition-colors">
+                <td class="px-6 py-3.5 whitespace-nowrap">${rankBadge}</td>
+                <td class="px-6 py-3.5 text-black font-black group-hover:text-primary transition-colors flex items-center">
                     ${avatarHtml}
-                    ${user.username}
+                    <span>${user.username}</span>
                 </td>
-                <td class="px-6 py-4 text-center text-white">${user.count}</td>
-                <td class="px-6 py-4 text-center text-gray-400">${user.likes}</td>
-                <td class="px-6 py-4 text-center text-gray-400">${avgLikes}</td>
-                <td class="px-6 py-4 text-right">
-                   <button class="text-primary hover:text-white"><i class="fa-solid fa-chevron-right"></i></button>
+                <td class="px-6 py-3.5 text-center text-black font-black">${user.count}</td>
+                <td class="px-6 py-3.5 text-center text-gray-700 font-bold">${user.likes}</td>
+                <td class="px-6 py-3.5 text-center text-gray-700 font-bold">${avgLikes}</td>
+                <td class="px-6 py-3.5 text-right">
+                   <button class="w-7 h-7 bg-white hover:bg-black hover:text-white border-2 border-black rounded-lg inline-flex items-center justify-center text-xs transition-all shadow-neo-sm text-black"><i class="fa-solid fa-chevron-right"></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1094,7 +1294,7 @@ const UI = {
         if (member.photo) {
             els.profileAvatar.innerHTML = `<img src="${member.photo}" class="w-full h-full object-cover">`;
         } else {
-            els.profileAvatar.innerHTML = `<div class="w-full h-full bg-primary flex items-center justify-center text-xl font-bold text-white">${member.username.substring(0, 2).toUpperCase()}</div>`;
+            els.profileAvatar.innerHTML = `<div class="w-full h-full bg-yellow flex items-center justify-center text-xl font-black text-black">${member.username.substring(0, 2).toUpperCase()}</div>`;
         }
 
         // External Link
@@ -1196,7 +1396,7 @@ const UI = {
         els.profileGallery.innerHTML = '';
 
         if (posts.length === 0) {
-            els.profileGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-400 border border-white/5 rounded-lg border-dashed">No posts found for this date.</div>`;
+            els.profileGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-500 font-bold border-2 border-black border-dashed rounded-xl bg-neutral-50 text-xs">No posts found for this date.</div>`;
             return;
         }
 
@@ -1214,24 +1414,24 @@ const UI = {
 
         posts.forEach(post => {
             const item = document.createElement('div');
-            item.className = "aspect-[2/3] bg-white/5 rounded-lg overflow-hidden relative group border border-white/5";
+            item.className = "aspect-[2/3] bg-neutral-100 rounded-xl overflow-hidden relative group border-2 border-black shadow-neo-sm hover:shadow-neo transition-all cursor-pointer";
 
             const likes = post.likes_count || 0;
             const comments = post.comment_count || 0;
             const isVideo = post.content_type === 'video';
-            const icon = isVideo ? '<i class="fa-solid fa-video absolute top-2 right-2 text-white/80 drop-shadow-md"></i>' : '';
+            const icon = isVideo ? '<div class="absolute top-2 right-2 bg-black text-white text-[10px] font-black px-1.5 py-0.5 rounded border border-white z-10"><i class="fa-solid fa-video mr-1"></i>Video</div>' : '';
 
             // Thumbnail or main URL? Use thumbnail if valid, else url
             const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
 
             item.innerHTML = `
-                <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" alt="${post.caption || ''}">
+                <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" alt="${post.caption || ''}">
                 ${icon}
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                    <p class="text-[10px] text-gray-300 mb-1 font-medium"><i class="fa-regular fa-calendar mr-1"></i> ${new Date(post.created_at).toLocaleDateString()}</p>
-                    <div class="flex justify-between items-center text-xs text-white">
-                        <span><i class="fa-solid fa-heart text-red-400 mr-1"></i> ${likes}</span>
-                        <span><i class="fa-solid fa-comment text-white/70 mr-1"></i> ${comments}</span>
+                <div class="absolute inset-0 bg-white/95 border-t-2 border-black opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-end text-black">
+                    <p class="text-[10px] text-gray-700 mb-1 font-bold"><i class="fa-regular fa-calendar mr-1"></i> ${new Date(post.created_at).toLocaleDateString()}</p>
+                    <div class="flex justify-between items-center text-xs font-black">
+                        <span class="bg-rose-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-heart text-rose-600 mr-1"></i> ${likes}</span>
+                        <span class="bg-sky-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-comment text-sky-600 mr-1"></i> ${comments}</span>
                     </div>
                 </div>
             `;
@@ -1239,8 +1439,6 @@ const UI = {
             const img = item.querySelector('img');
             observer.observe(img);
 
-            // Open full image on click? (Optional, not requested but good UX)
-            // For now, let's link to external url
             item.title = "Open on Web";
             item.style.cursor = "pointer";
             item.onclick = () => window.open(post.url, '_blank');
@@ -1262,7 +1460,7 @@ const UI = {
         els.dailyPostsGallery.innerHTML = '';
 
         if (posts.length === 0) {
-            els.dailyPostsGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-400 border border-white/5 rounded-lg border-dashed">No posts found for this date.</div>`;
+            els.dailyPostsGallery.innerHTML = `<div class="col-span-full py-8 text-center text-gray-500 font-bold border-2 border-black border-dashed rounded-xl bg-neutral-50 text-xs">No posts found for this date.</div>`;
         } else {
             const observer = new IntersectionObserver((entries, obs) => {
                 entries.forEach(entry => {
@@ -1277,23 +1475,23 @@ const UI = {
 
             posts.forEach(post => {
                 const item = document.createElement('div');
-                item.className = "aspect-[2/3] bg-white/5 rounded-lg overflow-hidden relative group border border-white/5";
+                item.className = "aspect-[2/3] bg-neutral-100 rounded-xl overflow-hidden relative group border-2 border-black shadow-neo-sm hover:shadow-neo transition-all cursor-pointer";
 
                 const likes = post.likes_count || 0;
                 const comments = post.comment_count || 0;
                 const isVideo = post.content_type === 'video';
-                const icon = isVideo ? '<i class="fa-solid fa-video absolute top-2 right-2 text-white/80 drop-shadow-md"></i>' : '';
+                const icon = isVideo ? '<div class="absolute top-2 right-2 bg-black text-white text-[10px] font-black px-1.5 py-0.5 rounded border border-white z-10"><i class="fa-solid fa-video mr-1"></i>Video</div>' : '';
 
                 const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
 
                 item.innerHTML = `
-                    <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" alt="${post.caption || ''}">
+                    <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" alt="${post.caption || ''}">
                     ${icon}
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                        <p class="text-[10px] text-gray-300 mb-1 font-medium"><i class="fa-regular fa-calendar mr-1"></i> ${new Date(post.created_at).toLocaleDateString()}</p>
-                        <div class="flex justify-between items-center text-xs text-white">
-                            <span><i class="fa-solid fa-heart text-red-400 mr-1"></i> ${likes}</span>
-                            <span><i class="fa-solid fa-comment text-white/70 mr-1"></i> ${comments}</span>
+                    <div class="absolute inset-0 bg-white/95 border-t-2 border-black opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-end text-black">
+                        <p class="text-[10px] text-gray-700 mb-1 font-bold"><i class="fa-regular fa-calendar mr-1"></i> ${new Date(post.created_at).toLocaleDateString()}</p>
+                        <div class="flex justify-between items-center text-xs font-black">
+                            <span class="bg-rose-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-heart text-rose-600 mr-1"></i> ${likes}</span>
+                            <span class="bg-sky-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-comment text-sky-600 mr-1"></i> ${comments}</span>
                         </div>
                     </div>
                 `;
@@ -1416,7 +1614,7 @@ const UI = {
         tbody.innerHTML = '';
 
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 italic">No entries found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold italic">No entries found.</td></tr>`;
             const controls = document.getElementById('pagination-controls');
             if (controls) controls.innerHTML = '';
             return;
@@ -1434,9 +1632,9 @@ const UI = {
 
         pageData.forEach(item => {
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-white/5 transition-colors cursor-pointer";
+            tr.className = "hover:bg-amber-50/70 transition-colors cursor-pointer border-b border-black/10 last:border-0";
             tr.onclick = (e) => {
-                if (e.target.closest('a')) return;
+                if (e.target.closest('a') || e.target.closest('button')) return;
                 this.showPostDetail(item);
             };
 
@@ -1445,18 +1643,21 @@ const UI = {
             const likes = item.likes_count || 0;
             const comments = item.comment_count || 0;
             const type = item.content_type || 'photo';
+            const typeBadge = type === 'video'
+                ? '<span class="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-purple-200 text-purple-950 border border-black shadow-neo-sm">Video</span>'
+                : '<span class="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-sky-200 text-sky-950 border border-black shadow-neo-sm">Photo</span>';
 
             tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">${date}</td>
-                <td class="px-6 py-4 text-white font-medium">${username}</td>
-                <td class="px-6 py-4">
-                    <span class="px-2 py-1 text-xs rounded-full bg-white/10 text-gray-300 border border-white/5">${type}</span>
+                <td class="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-gray-700">${date}</td>
+                <td class="px-6 py-3.5 text-black font-black text-sm">${username}</td>
+                <td class="px-6 py-3.5">
+                    ${typeBadge}
                 </td>
-                <td class="px-6 py-4 text-center">${likes}</td>
-                <td class="px-6 py-4 text-center">${comments}</td>
-                <td class="px-6 py-4 text-right">
-                    <button class="text-gray-400 hover:text-white mr-3 transition-colors" title="View Details"><i class="fa-solid fa-eye"></i></button>
-                    <a href="${item.url}" target="_blank" class="text-primary hover:text-white transition-colors" title="Open External"><i class="fa-solid fa-external-link-alt"></i></a>
+                <td class="px-6 py-3.5 text-center text-black font-black">${likes}</td>
+                <td class="px-6 py-3.5 text-center text-black font-black">${comments}</td>
+                <td class="px-6 py-3.5 text-right whitespace-nowrap">
+                    <button class="w-7 h-7 bg-white hover:bg-yellow border-2 border-black rounded-lg inline-flex items-center justify-center text-xs mr-2 transition-all shadow-neo-sm text-black" title="View Details"><i class="fa-solid fa-eye"></i></button>
+                    <a href="${item.url}" target="_blank" class="w-7 h-7 bg-white hover:bg-sky-200 border-2 border-black rounded-lg inline-flex items-center justify-center text-xs transition-all shadow-neo-sm text-black" title="Open External"><i class="fa-solid fa-external-link-alt"></i></a>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1465,10 +1666,10 @@ const UI = {
         const controls = document.getElementById('pagination-controls');
         if (controls) {
             controls.innerHTML = `
-                <span class="text-sm text-gray-500">Page ${page} of ${maxPage} (${data.length} total)</span>
+                <span class="text-xs font-bold text-gray-600">Page <strong class="text-black">${page}</strong> of ${maxPage} (${data.length} total entries)</span>
                 <div class="flex gap-2">
-                    <button ${page <= 1 ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page - 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                    <button ${page >= maxPage ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page + 1})" class="px-3 py-1 bg-white/5 text-sm rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    <button ${page <= 1 ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page - 1})" class="px-3.5 py-1.5 bg-white hover:bg-neutral-100 text-black text-xs font-black rounded-lg border-2 border-black shadow-neo-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">Prev</button>
+                    <button ${page >= maxPage ? 'disabled' : ''} onclick="UI.filterAndRenderTable(${page + 1})" class="px-3.5 py-1.5 bg-yellow hover:bg-yellow-400 text-black text-xs font-black rounded-lg border-2 border-black shadow-neo-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">Next</button>
                 </div>
             `;
         }
@@ -1479,14 +1680,14 @@ const UI = {
         if (!tabDashboard || !tabGallery) return;
 
         if (activeView === 'dashboard') {
-            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center gap-1.5 shadow-md";
-            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center gap-1.5 shadow-neo-sm";
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center gap-1.5";
         } else if (activeView === 'gallery') {
-            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg transition-all flex items-center gap-1.5 shadow-md";
-            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-black text-black bg-yellow border-2 border-black rounded-lg transition-all flex items-center gap-1.5 shadow-neo-sm";
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center gap-1.5";
         } else {
-            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
-            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white rounded-lg transition-all flex items-center gap-1.5";
+            tabDashboard.className = "px-3 md:px-4 py-1.5 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center gap-1.5";
+            tabGallery.className = "px-3 md:px-4 py-1.5 text-xs font-bold text-gray-700 hover:text-black rounded-lg transition-all flex items-center gap-1.5";
         }
     },
 
@@ -1618,7 +1819,7 @@ const UI = {
 
         filtered.forEach(post => {
             const card = document.createElement('div');
-            card.className = "group relative bg-white/5 border border-white/5 hover:border-primary/40 rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/5 flex flex-col justify-between";
+            card.className = "group relative bg-white border-2.5 border-black rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-neo-lg shadow-neo flex flex-col justify-between";
 
             const thumbUrl = (post.thumbnail && post.thumbnail.length > 0) ? post.thumbnail : post.url;
             const avatarUrl = post.member?.photo || '';
@@ -1630,44 +1831,41 @@ const UI = {
 
             const isVideo = post.content_type === 'video';
             const badgeHtml = isVideo
-                ? `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-video text-[8px]"></i> Video</div>`
-                : `<div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-lg text-[10px] font-bold z-30 flex items-center gap-1 shadow-lg"><i class="fa-solid fa-camera text-[8px]"></i> Image</div>`;
+                ? `<div class="absolute top-3 right-3 bg-white text-black border-2 border-black px-2 py-0.5 rounded-lg text-[10px] font-black z-30 flex items-center gap-1 shadow-neo-sm"><i class="fa-solid fa-video text-[8px] text-purple-600"></i> Video</div>`
+                : `<div class="absolute top-3 right-3 bg-white text-black border-2 border-black px-2 py-0.5 rounded-lg text-[10px] font-black z-30 flex items-center gap-1 shadow-neo-sm"><i class="fa-solid fa-camera text-[8px] text-sky-600"></i> Photo</div>`;
 
             card.innerHTML = `
                 <!-- Shimmer Skeleton Preloader -->
-                <div class="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:200%_100%] animate-shimmer z-0 transition-opacity duration-500"></div>
+                <div class="absolute inset-0 bg-neutral-200 animate-pulse z-0 transition-opacity duration-300"></div>
                 
                 <!-- Lazy Loaded Image -->
-                <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-500 z-10" alt="${caption}">
+                <img data-src="${thumbUrl}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300 z-10" alt="${caption}">
                 
                 <!-- Media Type Badge -->
                 ${badgeHtml}
 
-                <!-- Glassmorphic Details Overlay (shows on hover) -->
-                <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 p-4 flex flex-col justify-between">
+                <!-- Neobrutalist Details Overlay (shows on hover) -->
+                <div class="absolute inset-0 bg-white/95 border-t-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 p-4 flex flex-col justify-between">
                     <!-- Top Part: Member avatar & username -->
-                    <div class="flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    <div class="flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
                         ${avatarUrl
-                    ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full border border-white/20 object-cover" onerror="this.src=''">`
-                    : `<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">${username.substring(0, 2).toUpperCase()}</div>`
+                    ? `<img src="${avatarUrl}" class="w-7 h-7 rounded-lg border-2 border-black object-cover shadow-neo-sm" onerror="this.src=''">`
+                    : `<div class="w-7 h-7 rounded-lg bg-yellow border-2 border-black flex items-center justify-center text-[10px] font-black text-black shadow-neo-sm">${username.substring(0, 2).toUpperCase()}</div>`
                 }
-                        <span class="text-xs text-white font-semibold truncate max-w-[120px]">${username}</span>
+                        <span class="text-xs text-black font-black truncate max-w-[130px]">${username}</span>
                     </div>
 
                     <!-- Bottom Part: Description, Divider, and Stats -->
-                    <div class="space-y-2.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                        <!-- Caption Text (two lines maximum) -->
-                        <p class="text-xs text-gray-300 line-clamp-2 leading-relaxed font-normal">${caption || 'No caption'}</p>
+                    <div class="space-y-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
+                        <p class="text-xs text-gray-800 line-clamp-2 leading-relaxed font-semibold">${caption || 'No caption'}</p>
                         
-                        <!-- Divider Line -->
-                        <div class="border-t border-white/10"></div>
+                        <div class="border-t-2 border-black/15"></div>
                         
-                        <!-- Engagement & Date Footer -->
-                        <div class="flex justify-between items-center text-[10px] text-gray-400">
-                            <span class="font-medium flex items-center gap-1"><i class="fa-regular fa-calendar text-[9px]"></i> ${dateStr}</span>
-                            <div class="flex items-center gap-2.5 font-bold text-white">
-                                <span class="flex items-center gap-1"><i class="fa-solid fa-heart text-red-500 text-[9px]"></i> ${likes}</span>
-                                <span class="flex items-center gap-1"><i class="fa-solid fa-comment text-blue-400 text-[9px]"></i> ${comments}</span>
+                        <div class="flex justify-between items-center text-[10px] text-gray-700">
+                            <span class="font-bold flex items-center gap-1"><i class="fa-regular fa-calendar text-[9px]"></i> ${dateStr}</span>
+                            <div class="flex items-center gap-2 font-black text-black">
+                                <span class="flex items-center gap-1 bg-rose-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-heart text-rose-600 text-[9px]"></i> ${likes}</span>
+                                <span class="flex items-center gap-1 bg-sky-100 border border-black px-1.5 py-0.5 rounded shadow-neo-sm"><i class="fa-solid fa-comment text-sky-600 text-[9px]"></i> ${comments}</span>
                             </div>
                         </div>
                     </div>
